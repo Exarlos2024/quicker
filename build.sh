@@ -82,20 +82,42 @@ env "ProgramFiles(x86)=$PF86" \
     "CommonProgramFiles(x86)=$CPF86" \
     "$DOTNET" build "$PROJ" -c "$CONFIG" -v minimal -nodeReuse:false
 
-# The raw output sits three levels deep under bin/, and the apphost is not
-# runnable on its own -- it looks for the matching .dll / .deps.json /
-# .runtimeconfig.json right next to it. So stage the whole set, otherwise
-# release/QuickerLite.exe would just sit there and refuse to start.
-BIN="$SCRIPT_DIR/src/QuickerLite/bin/$CONFIG/net8.0-windows"
+# The staged exe is published self-contained on purpose.
+#
+# A plain build output is framework-dependent: at startup it asks for
+# Microsoft.WindowsDesktop.App 8.0, and having .NET 10 installed does NOT
+# satisfy that (roll-forward never crosses a major version) -- the exe then
+# greets you with "You must install or update .NET". Self-contained costs
+# ~40s and ~70MB per build, and buys an exe that starts on any Windows box.
+#
+# -o must be in Windows form: this shell runs with MSYS_NO_PATHCONV=1, so a
+# POSIX path reaching dotnet is read as a rooted Windows path and silently
+# writes to D:\d\projects\... instead of failing.
 RELEASE="$SCRIPT_DIR/release"
+RELEASE_WIN="$(cygpath -w "$RELEASE")"
 
-echo "[2/2] Staging to release/ ..."
-mkdir -p "$RELEASE"
-cp -f "$BIN/QuickerLite.exe" \
-      "$BIN/QuickerLite.dll" \
-      "$BIN/QuickerLite.deps.json" \
-      "$BIN/QuickerLite.runtimeconfig.json" \
-      "$RELEASE/"
+echo "[2/2] Publishing self-contained exe to release/ ..."
+DEBUGTYPE=none
+if [ "$CONFIG" = "Debug" ]; then DEBUGTYPE=embedded; fi
+env "ProgramFiles(x86)=$PF86" \
+    "CommonProgramFiles(x86)=$CPF86" \
+    "$DOTNET" publish "$PROJ" \
+      -c "$CONFIG" \
+      -r win-x64 \
+      --self-contained true \
+      -p:PublishSingleFile=true \
+      -p:IncludeNativeLibrariesForSelfExtract=true \
+      -p:EnableCompressionInSingleFile=true \
+      -p:DebugType="$DEBUGTYPE" \
+      -o "$RELEASE_WIN" \
+      -nodeReuse:false
+
+# Leftovers from the old framework-dependent staging would sit next to a
+# self-contained bundle and read as "the app needs these". It does not.
+rm -f "$RELEASE/QuickerLite.dll" \
+      "$RELEASE/QuickerLite.deps.json" \
+      "$RELEASE/QuickerLite.runtimeconfig.json"
+rm -rf "$RELEASE/selfcontained"
 
 echo
 echo "[OK] Output: $RELEASE/QuickerLite.exe"

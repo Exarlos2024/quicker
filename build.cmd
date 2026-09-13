@@ -81,18 +81,39 @@ if errorlevel 1 (
 
 echo.
 echo [2/3] Build succeeded.
-echo [3/3] Staging to release\ ...
+echo [3/3] Publishing self-contained exe to release\ ...
 
-rem The raw output sits three levels deep under bin\, and the apphost is not
-rem runnable on its own -- it looks for the matching .dll / .deps.json /
-rem .runtimeconfig.json right next to it. Stage the whole set, otherwise
-rem release\QuickerLite.exe would just sit there and refuse to start.
+rem The staged exe is published self-contained on purpose. A plain build output
+rem is framework-dependent: at startup it asks for Microsoft.WindowsDesktop.App
+rem 8.0, and having .NET 10 installed does NOT satisfy that (roll-forward never
+rem crosses a major version) -- the exe then greets you with "You must install
+rem or update .NET". Self-contained costs ~40s and ~70MB per build, and buys an
+rem exe that starts on any Windows box.
 set "RELEASE=%~dp0release"
-if not exist "%RELEASE%" mkdir "%RELEASE%"
-copy /y "%OUTDIR%\QuickerLite.exe" "%RELEASE%\" >nul
-copy /y "%OUTDIR%\QuickerLite.dll" "%RELEASE%\" >nul
-copy /y "%OUTDIR%\QuickerLite.deps.json" "%RELEASE%\" >nul
-copy /y "%OUTDIR%\QuickerLite.runtimeconfig.json" "%RELEASE%\" >nul
+if /i "%CONFIG%"=="Debug" (set "DEBUGTYPE=embedded") else (set "DEBUGTYPE=none")
+
+"%DOTNET_EXE%" publish "%PROJ%" ^
+  -c %CONFIG% ^
+  -r win-x64 ^
+  --self-contained true ^
+  -p:PublishSingleFile=true ^
+  -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:EnableCompressionInSingleFile=true ^
+  -p:DebugType=%DEBUGTYPE% ^
+  -o "%RELEASE%" ^
+  -nodeReuse:false
+if errorlevel 1 (
+  echo.
+  echo [FAILED] Publish error.
+  exit /b 1
+)
+
+rem Leftovers from the old framework-dependent staging would sit next to a
+rem self-contained bundle and read as "the app needs these". It does not.
+if exist "%RELEASE%\QuickerLite.dll" del /q "%RELEASE%\QuickerLite.dll"
+if exist "%RELEASE%\QuickerLite.deps.json" del /q "%RELEASE%\QuickerLite.deps.json"
+if exist "%RELEASE%\QuickerLite.runtimeconfig.json" del /q "%RELEASE%\QuickerLite.runtimeconfig.json"
+if exist "%RELEASE%\selfcontained" rmdir /s /q "%RELEASE%\selfcontained"
 
 echo.
 echo [OK] Output: %RELEASE%\QuickerLite.exe
@@ -100,7 +121,7 @@ echo.
 
 if /i "%~2"=="run" (
   echo Launching QuickerLite ...
-  start "" "%OUTDIR%\QuickerLite.exe"
+  start "" "%RELEASE%\QuickerLite.exe"
 )
 
 exit /b 0

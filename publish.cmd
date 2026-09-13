@@ -5,7 +5,8 @@ rem ============================================================
 rem  QuickerLite self-contained publish
 rem
 rem  Produces a standalone exe that needs no .NET runtime installed,
-rem  written to dist\.
+rem  written to release\ -- the same place build.cmd writes to, so there is
+rem  exactly one exe to look for.
 rem
 rem  Why this matters:
 rem   1) The debug exe needs the .NET 8 runtime present on the machine.
@@ -49,10 +50,10 @@ set "DOTNET_NOLOGO=1"
 set "MSBUILDDISABLENODEREUSE=1"
 
 set "PROJ=%~dp0src\QuickerLite\QuickerLite.csproj"
-set "OUT=%~dp0dist"
+set "OUT=%~dp0release"
 
 echo.
-echo Publishing self-contained single-file build to dist\ ...
+echo Publishing self-contained single-file build to release\ ...
 echo The .NET runtime pack is downloaded on first run, so this may take a while.
 echo.
 
@@ -72,16 +73,17 @@ if errorlevel 1 (
   exit /b 1
 )
 
-rem Same reason as in build.cmd: keep the shippable exe somewhere findable
-rem instead of three levels down under bin\. Self-contained, so this one copy
-rem is the whole program -- no sidecar files needed.
-set "RELEASE=%~dp0release\selfcontained"
-if not exist "%RELEASE%" mkdir "%RELEASE%"
-copy /y "%OUT%\QuickerLite.exe" "%RELEASE%\" >nul
+rem Same reason as in build.cmd: drop the leftovers of the old
+rem framework-dependent staging, which would otherwise sit next to a
+rem self-contained bundle and read as "the app needs these". It does not.
+if exist "%OUT%\QuickerLite.dll" del /q "%OUT%\QuickerLite.dll"
+if exist "%OUT%\QuickerLite.deps.json" del /q "%OUT%\QuickerLite.deps.json"
+if exist "%OUT%\QuickerLite.runtimeconfig.json" del /q "%OUT%\QuickerLite.runtimeconfig.json"
+if exist "%OUT%\selfcontained" rmdir /s /q "%OUT%\selfcontained"
 
 echo.
 echo Done. Standalone exe:
 echo   %OUT%\QuickerLite.exe
-echo   %RELEASE%\QuickerLite.exe
+echo   Double-click it - no .NET runtime needed on the target machine.
 echo.
 exit /b 0

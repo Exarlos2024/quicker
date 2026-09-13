@@ -6,7 +6,8 @@
 #  by security policy on this host, and `cmd //c` from bash degenerates
 #  into an interactive shell, so publish.cmd is unreachable here.
 #
-#  Output: dist/QuickerLite.exe -- no .NET runtime required on the target
+#  Output: release/QuickerLite.exe -- same place build.sh writes to, so there
+#  is exactly one exe to look for. No .NET runtime required on the target
 #  machine, which matters because the autostart entry stores this exe path
 #  and a portable SDK location makes the Debug build fail at boot with
 #  "Failed to resolve hostfxr.dll".
@@ -23,7 +24,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # dotnet is read as a *rooted* Windows path, so "-o /d/projects/app/dist"
 # silently writes to "D:\d\projects\app\dist" instead of failing.
 PROJ="$(cygpath -w "$SCRIPT_DIR/src/QuickerLite/QuickerLite.csproj")"
-OUT="$(cygpath -w "$SCRIPT_DIR/dist")"
+OUT="$(cygpath -w "$SCRIPT_DIR/release")"
 
 DOTNET="${DOTNET:-}"
 if [ -z "$DOTNET" ]; then
@@ -58,7 +59,7 @@ PF86='C:\Program Files (x86)'
 CPF86='C:\Program Files (x86)\Common Files'
 
 echo
-echo "Publishing self-contained single-file build to dist/ ..."
+echo "Publishing self-contained single-file build to release/ ..."
 echo "The .NET runtime pack is downloaded on first run, so this may take a while."
 echo
 
@@ -78,12 +79,5 @@ env "ProgramFiles(x86)=$PF86" \
 echo
 echo "Done. Standalone exe:"
 ls -l "$OUT/QuickerLite.exe"
-
-# Same reason as in build.sh: keep the shippable exe somewhere findable
-# instead of three levels down under bin/. Self-contained, so this one copy
-# is the whole program -- no sidecar files needed.
-RELEASE="$SCRIPT_DIR/release/selfcontained"
-mkdir -p "$RELEASE"
-cp -f "$SCRIPT_DIR/dist/QuickerLite.exe" "$RELEASE/"
-echo "Copied to: $RELEASE/QuickerLite.exe"
+echo "Double-click it -- no .NET runtime needed on the target machine."
 echo

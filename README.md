@@ -14,6 +14,13 @@
 下载 `QuickerLite-<版本>-win-x64.zip`，解压后直接双击 `QuickerLite.exe` 即可 ——
 自包含单文件版，**目标机器上不需要装 .NET 运行时**。
 
+**这是绿色版（portable）**，不是安装版：
+
+- 单个 exe，没有安装向导，不需要管理员权限，不写 `Program Files`
+- 想装到哪就拷到哪（U 盘也行），配置跟着走
+- **卸载** = 删掉这个 exe。配置和图标缓存留在 `%AppData%\QuickerLite\`，一并删掉就干净了
+- 唯一会写注册表的地方是「开机自启」—— 而且是你在设置里主动勾选时才写 `HKCU\...\Run`
+
 每次给 `v*` 标签（如 `git tag v1.0 && git push origin v1.0`）推上去，
 GitHub Actions 会自动构建、跑回归用例、并把带 SHA256 校验文件的压缩包挂到 Release 上。
 
@@ -101,15 +108,13 @@ build.cmd              :: 编译 Debug
 build.cmd Release      :: 编译 Release
 build.cmd Release run  :: 编译 Release 并启动
 run.cmd                :: 启动 Debug 版
-publish.cmd            :: 打包成不依赖 .NET 运行时的独立 exe（输出到 dist\）
+publish.cmd            :: 编译 Release 并输出自包含 exe 到 release\
 ```
 
-编译产物会同步复制到仓库根的 **`release\`**，不用再去 `bin\` 里翻三层：
-
-```
-release\QuickerLite.exe                  <- build 的产出，需要本机装 .NET 8 运行时
-release\selfcontained\QuickerLite.exe    <- publish 的产出，单文件 ~70MB，拷到哪台机器都能跑
-```
+不管是 `build` 还是 `publish`，产物都写到仓库根的 **`release\QuickerLite.exe`**，不用再去 `bin\` 里翻三层。
+它是**自包含单文件**（~70MB，把 .NET 运行时一起打进去了），双击就能跑，
+目标机器上不需要装 .NET —— 装了 .NET 10 也不行，因为 roll-forward 不跨大版本，
+框架依赖版会弹「You must install or update .NET」。
 
 POSIX shell（Git Bash / MSYS）下用：
 
