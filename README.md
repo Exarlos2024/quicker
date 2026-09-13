@@ -104,6 +104,13 @@ run.cmd                :: 启动 Debug 版
 publish.cmd            :: 打包成不依赖 .NET 运行时的独立 exe（输出到 dist\）
 ```
 
+编译产物会同步复制到仓库根的 **`release\`**，不用再去 `bin\` 里翻三层：
+
+```
+release\QuickerLite.exe                  <- build 的产出，需要本机装 .NET 8 运行时
+release\selfcontained\QuickerLite.exe    <- publish 的产出，单文件 ~70MB，拷到哪台机器都能跑
+```
+
 POSIX shell（Git Bash / MSYS）下用：
 
 ```bash

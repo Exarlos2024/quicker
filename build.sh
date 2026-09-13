@@ -77,11 +77,26 @@ PF86='C:\Program Files (x86)'
 CPF86='C:\Program Files (x86)\Common Files'
 
 echo
-echo "[1/1] Building $CONFIG ..."
+echo "[1/2] Building $CONFIG ..."
 env "ProgramFiles(x86)=$PF86" \
     "CommonProgramFiles(x86)=$CPF86" \
     "$DOTNET" build "$PROJ" -c "$CONFIG" -v minimal -nodeReuse:false
 
+# The raw output sits three levels deep under bin/, and the apphost is not
+# runnable on its own -- it looks for the matching .dll / .deps.json /
+# .runtimeconfig.json right next to it. So stage the whole set, otherwise
+# release/QuickerLite.exe would just sit there and refuse to start.
+BIN="$SCRIPT_DIR/src/QuickerLite/bin/$CONFIG/net8.0-windows"
+RELEASE="$SCRIPT_DIR/release"
+
+echo "[2/2] Staging to release/ ..."
+mkdir -p "$RELEASE"
+cp -f "$BIN/QuickerLite.exe" \
+      "$BIN/QuickerLite.dll" \
+      "$BIN/QuickerLite.deps.json" \
+      "$BIN/QuickerLite.runtimeconfig.json" \
+      "$RELEASE/"
+
 echo
-echo "[OK] Output: $SCRIPT_DIR/src/QuickerLite/bin/$CONFIG/net8.0-windows/QuickerLite.exe"
+echo "[OK] Output: $RELEASE/QuickerLite.exe"
 echo

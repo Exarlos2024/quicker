@@ -72,8 +72,16 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem Same reason as in build.cmd: keep the shippable exe somewhere findable
+rem instead of three levels down under bin\. Self-contained, so this one copy
+rem is the whole program -- no sidecar files needed.
+set "RELEASE=%~dp0release\selfcontained"
+if not exist "%RELEASE%" mkdir "%RELEASE%"
+copy /y "%OUT%\QuickerLite.exe" "%RELEASE%\" >nul
+
 echo.
 echo Done. Standalone exe:
 echo   %OUT%\QuickerLite.exe
+echo   %RELEASE%\QuickerLite.exe
 echo.
 exit /b 0

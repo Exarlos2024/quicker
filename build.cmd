@@ -80,8 +80,22 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/2] Build succeeded.
-echo Output: %OUTDIR%\QuickerLite.exe
+echo [2/3] Build succeeded.
+echo [3/3] Staging to release\ ...
+
+rem The raw output sits three levels deep under bin\, and the apphost is not
+rem runnable on its own -- it looks for the matching .dll / .deps.json /
+rem .runtimeconfig.json right next to it. Stage the whole set, otherwise
+rem release\QuickerLite.exe would just sit there and refuse to start.
+set "RELEASE=%~dp0release"
+if not exist "%RELEASE%" mkdir "%RELEASE%"
+copy /y "%OUTDIR%\QuickerLite.exe" "%RELEASE%\" >nul
+copy /y "%OUTDIR%\QuickerLite.dll" "%RELEASE%\" >nul
+copy /y "%OUTDIR%\QuickerLite.deps.json" "%RELEASE%\" >nul
+copy /y "%OUTDIR%\QuickerLite.runtimeconfig.json" "%RELEASE%\" >nul
+
+echo.
+echo [OK] Output: %RELEASE%\QuickerLite.exe
 echo.
 
 if /i "%~2"=="run" (

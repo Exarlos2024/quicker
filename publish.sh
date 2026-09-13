@@ -78,4 +78,12 @@ env "ProgramFiles(x86)=$PF86" \
 echo
 echo "Done. Standalone exe:"
 ls -l "$OUT/QuickerLite.exe"
+
+# Same reason as in build.sh: keep the shippable exe somewhere findable
+# instead of three levels down under bin/. Self-contained, so this one copy
+# is the whole program -- no sidecar files needed.
+RELEASE="$SCRIPT_DIR/release/selfcontained"
+mkdir -p "$RELEASE"
+cp -f "$SCRIPT_DIR/dist/QuickerLite.exe" "$RELEASE/"
+echo "Copied to: $RELEASE/QuickerLite.exe"
 echo
