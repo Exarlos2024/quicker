@@ -17,7 +17,9 @@
     <AssemblyName>QuickerLite</AssemblyName>
     <RootNamespace>QuickerLite</RootNamespace>
     <Product>QuickerLite</Product>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
 
     <!-- 生成时不要弹控制台窗口 -->
     <DebugType>embedded</DebugType>

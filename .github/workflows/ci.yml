@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/QuickerLite/QuickerLite.csproj
+
+      # 非零退出码会直接让这一步失败，所以它是真正的构建闸门
+      - name: Build (Release)
+        run: dotnet build src/QuickerLite/QuickerLite.csproj -c Release --no-restore
+
+      - name: Test
+        run: dotnet run --project tests/TileReorder/TileReorderTests.csproj -c Release -v quiet
+
+  release:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # 自包含单文件：目标机器上不需要装 .NET 运行时。
+      # 这一点对本项目是硬需求 —— 开机自启写的是这个 exe 的路径，
+      # 框架依赖版在 SDK 装在非标准目录时会报 hostfxr.dll 解析失败。
+      - name: Publish (self-contained win-x64)
+        run: >
+          dotnet publish src/QuickerLite/QuickerLite.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none
+          -o dist
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $stage = Join-Path $env:RUNNER_TEMP 'stage'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item dist/QuickerLite.exe $stage
+          Copy-Item README.md, LICENSE $stage
+          $zip = "QuickerLite-$version-win-x64.zip"
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash
+          "$hash  $zip" | Out-File -Encoding utf8 "$zip.sha256"
+          "ASSET_NAME=$zip" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: QuickerLite ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            ${{ env.ASSET_NAME }}
+            ${{ env.ASSET_NAME }}.sha256

@@ -6,6 +6,17 @@
 技术栈：C# + WPF + .NET 8，零第三方依赖（托盘用 WinForms 自带的 `NotifyIcon`，
 配置用内置的 `System.Text.Json`）。
 
+[![CI](https://github.com/Exarlos2024/quicker/actions/workflows/ci.yml/badge.svg)](https://github.com/Exarlos2024/quicker/actions/workflows/ci.yml)
+
+## 下载
+
+最新版本见 [Releases](https://github.com/Exarlos2024/quicker/releases/latest)：
+下载 `QuickerLite-<版本>-win-x64.zip`，解压后直接双击 `QuickerLite.exe` 即可 ——
+自包含单文件版，**目标机器上不需要装 .NET 运行时**。
+
+每次给 `v*` 标签（如 `git tag v1.0 && git push origin v1.0`）推上去，
+GitHub Actions 会自动构建、跑回归用例、并把带 SHA256 校验文件的压缩包挂到 Release 上。
+
 ---
 
 ## 现在能做什么
