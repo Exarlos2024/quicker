@@ -1,0 +1,455 @@
+<Window x:Class="QuickerLite.UI.PanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:QuickerLite.UI"
+        Title="QuickerLite"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="Manual"
+        WindowStartupLocation="Manual"
+        AllowsTransparency="False"
+        Background="#FFFFFFFF"
+        FontFamily="Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        SnapsToDevicePixels="True"
+        AllowDrop="True"
+        Deactivated="OnWindowDeactivated"
+        PreviewKeyDown="OnWindowPreviewKeyDown"
+        PreviewMouseWheel="OnWindowPreviewMouseWheel"
+        DragOver="OnWindowDragOver"
+        DragLeave="OnWindowDragLeave"
+        Drop="OnWindowDrop">
+
+    <!--
+        布局骨架。高度由 ApplyColumns 按 Metrics 算出来写死，
+        不跟内容走 —— 面板的几何必须恒定，否则肌肉记忆就废了。
+        Row1 用 * 是为了让腰栏始终贴在面板底部。
+    -->
+    <Grid>
+      <Border x:Name="PanelFrame"
+              BorderBrush="{StaticResource BorderSoftBrush}"
+              BorderThickness="1"
+              CornerRadius="14"
+              Background="{StaticResource PanelBrush}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- ══════════ 顶部：命令栏 ══════════ -->
+            <Grid Grid.Row="0" Margin="12,10,12,4">
+                <Border Style="{StaticResource CommandBarStyle}"
+                        Height="{x:Static ui:Metrics.InputHeight}">
+                    <Grid Margin="12,0,8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 放大镜。给出「这里能打字」的信号 -->
+                        <Canvas Grid.Column="0" Width="14" Height="14" VerticalAlignment="Center">
+                            <Ellipse Canvas.Left="1.4" Canvas.Top="1.4" Width="9.2" Height="9.2"
+                                     Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.3" />
+                            <Line X1="9.4" Y1="9.4" X2="12.4" Y2="12.4"
+                                  Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.3"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        </Canvas>
+
+                        <Grid Grid.Column="1" Margin="9,0,8,0">
+                            <TextBlock x:Name="SearchPlaceholder"
+                                       Text="搜索或输入动作名"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       FontSize="{x:Static ui:Metrics.FontBody}"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False" />
+                            <TextBox x:Name="SearchBox"
+                                     Style="{StaticResource SearchTextBoxStyle}"
+                                     TextChanged="OnSearchTextChanged" />
+                        </Grid>
+
+                        <!-- 有内容时才出现的清除按钮 -->
+                        <Button x:Name="ClearSearchButton"
+                                Grid.Column="2"
+                                Style="{StaticResource IconButtonStyle}"
+                                VerticalAlignment="Center"
+                                Margin="0,0,6,0"
+                                ToolTip="清空搜索（Esc）"
+                                Visibility="Collapsed"
+                                Click="OnClearSearchClick">
+                            <Canvas Width="12" Height="12">
+                                <Line X1="2" Y1="2" X2="10" Y2="10"
+                                      Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.4"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                <Line X1="10" Y1="2" X2="2" Y2="10"
+                                      Stroke="{StaticResource TextSecondaryBrush}" StrokeThickness="1.4"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                            </Canvas>
+                        </Button>
+
+                        <!-- 键位提示。启动器最高频的动作是「打完字按回车」，
+                             但界面上从来没有告诉过用户这一点。 -->
+                        <Border Grid.Column="3"
+                                Style="{StaticResource KeyCapStyle}"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="Enter"
+                                       FontSize="{x:Static ui:Metrics.FontCaption}"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ══════════ 中部：图标网格 ══════════ -->
+            <ScrollViewer Grid.Row="1"
+                          x:Name="ItemScroller"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,4,0,4">
+                <Grid x:Name="DropSurface"
+                      Background="Transparent"
+                      ClipToBounds="True"
+                      AllowDrop="True"
+                      MouseLeftButtonDown="OnSurfaceMouseDown"
+                      DragOver="OnSurfaceDragOver"
+                      DragLeave="OnSurfaceDragLeave"
+                      Drop="OnSurfaceDrop">
+                    <ItemsControl x:Name="ItemHost" Margin="12,2,12,2">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel ItemWidth="{x:Static ui:Metrics.TileSlotWidth}"
+                                           ItemHeight="{x:Static ui:Metrics.TileSlotHeight}" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <!-- 结构：按钮（悬停/按下） → 状态层（选中/焦点） → 角标。
+                                     状态层必须 IsHitTestVisible=False，否则它会吃掉
+                                     底下按钮的点击和拖拽。 -->
+                                <Grid Width="{x:Static ui:Metrics.TileWidth}"
+                                      Height="{x:Static ui:Metrics.TileHeight}"
+                                      Margin="4">
+                                    <Button Style="{StaticResource ActionTileStyle}"
+                                            Tag="{Binding}"
+                                            ToolTip="{Binding TooltipText}"
+                                            PreviewMouseLeftButtonDown="OnTileMouseDown"
+                                            MouseMove="OnTileMouseMove"
+                                            Click="OnItemClick">
+                                        <!-- 菜单项在 OnItemMenuOpened 里按当前选择动态生成：
+                                             选中多个时换成批量菜单 -->
+                                        <Button.ContextMenu>
+                                            <ContextMenu Style="{StaticResource PanelContextMenuStyle}"
+                                                         Opened="OnItemMenuOpened"
+                                                         Closed="OnContextMenuClosed" />
+                                        </Button.ContextMenu>
+
+                                        <StackPanel>
+                                            <!-- 图标容器。透明底 PNG 也能看清，
+                                                 也是整个网格韵律的来源 -->
+                                            <Border Style="{StaticResource IconBoxStyle}"
+                                                    Width="{x:Static ui:Metrics.IconBox}"
+                                                    Height="{x:Static ui:Metrics.IconBox}">
+                                                <Image Source="{Binding Icon}"
+                                                       Width="{x:Static ui:Metrics.IconGlyph}"
+                                                       Height="{x:Static ui:Metrics.IconGlyph}"
+                                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                            </Border>
+                                            <!-- 名称强制单行：折行会把 WrapPanel 的整行撑高，
+                                                 纵向节奏就断了 -->
+                                            <TextBlock Text="{Binding Name}"
+                                                       TextAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxWidth="76"
+                                                       Margin="0,8,0,0"
+                                                       FontSize="{x:Static ui:Metrics.FontLabel}"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- 状态层。
+                                         之前是一个 Border 同时管「选中填充」+「焦点环」+「焦点底色」，
+                                         整体放在按钮上面。结果：默认键盘焦点在第一格，那一格的
+                                         浅蓝底（Accent50）把图标和文字全盖住了，看起来像空格子。
+                                         拆成两层：填充放按钮下面（不会盖图标），环放按钮上面
+                                         （只描边不填充，所以也不会盖）。 -->
+                                    <Border CornerRadius="10" IsHitTestVisible="False">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="Background" Value="{StaticResource Accent100Brush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+
+                                    <Border CornerRadius="10" BorderThickness="1.5" IsHitTestVisible="False">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsFocusCursor}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{StaticResource Accent500Brush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+
+                                    <!-- 数字角标，前 9 格对应 Ctrl+1..9 -->
+                                    <Border Style="{StaticResource IndexBadgeStyle}"
+                                            Width="{x:Static ui:Metrics.BadgeSize}"
+                                            Height="{x:Static ui:Metrics.BadgeSize}"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            Margin="6"
+                                            IsHitTestVisible="False"
+                                            Visibility="{Binding IndexVisibility}">
+                                        <TextBlock Text="{Binding IndexText}"
+                                                   FontSize="{x:Static ui:Metrics.FontCaption}"
+                                                   TextAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </Border>
+
+                                    <!-- 勾选角标 -->
+                                    <Border Width="15" Height="15" CornerRadius="8"
+                                            Background="{StaticResource Accent500Brush}"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="4"
+                                            IsHitTestVisible="False"
+                                            Visibility="{Binding SelectionVisibility}">
+                                        <Path Data="M3.5,7.6 L6.3,10.3 L11,5.2"
+                                              Stretch="None"
+                                              Stroke="White"
+                                              StrokeThickness="1.7"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 「＋ 添加」格。浮在网格上层、落在第一个空槽位上，
+                         不塞进 ItemsControl —— 那会污染 _view，让拖拽下标、
+                         多选、搜索都多出一个假条目。 -->
+                    <Canvas x:Name="AddTileLayer" Margin="12,2,12,2">
+                        <Button x:Name="AddTile"
+                                Style="{StaticResource AddTileStyle}"
+                                Width="{x:Static ui:Metrics.TileWidth}"
+                                Height="{x:Static ui:Metrics.TileHeight}"
+                                ToolTip="添加程序、文件夹、文件或网址"
+                                Visibility="Collapsed"
+                                Click="OnAddTileClick">
+                            <StackPanel>
+                                <TextBlock Text="+"
+                                           FontSize="20"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                <TextBlock Text="添加"
+                                           FontSize="{x:Static ui:Metrics.FontLabel}"
+                                           Margin="0,4,0,0"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </Button>
+                    </Canvas>
+
+                    <!-- 空状态 / 无结果 -->
+                    <StackPanel x:Name="EmptyState"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Margin="24,12,24,12"
+                                Visibility="Collapsed">
+                        <Canvas x:Name="EmptyArt" Width="72" Height="72" HorizontalAlignment="Center">
+                            <Border Canvas.Left="2" Canvas.Top="2" Width="30" Height="30"
+                                    CornerRadius="8" Background="{StaticResource FillBrush}" />
+                            <Border Canvas.Left="40" Canvas.Top="2" Width="30" Height="30"
+                                    CornerRadius="8" Background="{StaticResource FillBrush}" />
+                            <Border Canvas.Left="2" Canvas.Top="40" Width="30" Height="30"
+                                    CornerRadius="8" Background="{StaticResource FillBrush}" />
+                            <Grid Canvas.Left="40" Canvas.Top="40" Width="30" Height="30">
+                                <Rectangle RadiusX="8" RadiusY="8" StrokeThickness="1.5"
+                                           StrokeDashArray="3 2"
+                                           Stroke="{StaticResource BorderStrongBrush}" />
+                                <TextBlock Text="+"
+                                           FontSize="16"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                            </Grid>
+                        </Canvas>
+
+                        <TextBlock x:Name="EmptyTitle"
+                                   FontSize="{x:Static ui:Metrics.FontTitle}"
+                                   FontWeight="Medium"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,18,0,0" />
+
+                        <TextBlock x:Name="EmptySubtitle"
+                                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="320"
+                                   Margin="0,6,0,0" />
+
+                        <StackPanel x:Name="EmptyActions"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,18,0,0">
+                            <Button x:Name="EmptyScanButton"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Content="扫描开始菜单"
+                                    Click="OnEmptyScanClick" />
+                            <Button x:Name="EmptyPickButton"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="从文件添加"
+                                    Margin="8,0,0,0"
+                                    Click="OnEmptyPickClick" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 拖拽排序时的插入位置指示条 -->
+                    <Canvas x:Name="DropLayer" IsHitTestVisible="False">
+                        <Border x:Name="DropMarker"
+                                Width="3"
+                                CornerRadius="1.5"
+                                Background="{StaticResource Accent500Brush}"
+                                Visibility="Collapsed" />
+                    </Canvas>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- ══════════ 底部：腰栏 ══════════ -->
+            <Border Grid.Row="2"
+                    Background="{StaticResource PageBrush}"
+                    BorderBrush="{StaticResource BorderSoftBrush}"
+                    BorderThickness="0,1,0,0"
+                    CornerRadius="0,0,13,13"
+                    AllowDrop="True"
+                    DragOver="OnFooterDragOver"
+                    Drop="OnFooterDrop">
+                <Grid Margin="8,5,8,5" MinHeight="34">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 文字页签。取代了原来的 8px 圆点 ——
+                         圆点既看不出有几页，也说不出每页叫什么。 -->
+                    <ScrollViewer x:Name="PageNav"
+                                  Grid.Column="0"
+                                  MaxWidth="272"
+                                  VerticalAlignment="Center"
+                                  HorizontalScrollBarVisibility="Hidden"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  Visibility="Collapsed">
+                        <StackPanel x:Name="PageTabs" Orientation="Horizontal" />
+                    </ScrollViewer>
+
+                    <!-- 状态。有选中时整块变成淡蓝胶囊 -->
+                    <Border x:Name="StatusChip"
+                            Grid.Column="1"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            CornerRadius="13"
+                            Padding="10,3"
+                            Margin="10,0,10,0"
+                            Background="Transparent">
+                        <TextBlock x:Name="StatusText"
+                                   FontSize="{x:Static ui:Metrics.FontCaption}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Border>
+
+                    <StackPanel x:Name="FooterButtons"
+                                Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <ToggleButton x:Name="PinToggle"
+                                      Style="{StaticResource ToggleFlatButtonStyle}"
+                                      Content="钉住"
+                                      ToolTip="钉住后执行动作不会自动隐藏面板" />
+                        <Button x:Name="SettingsButton"
+                                Style="{StaticResource FlatButtonStyle}"
+                                Content="设置"
+                                Margin="4,0,0,0"
+                                Click="OnOpenSettingsClick" />
+                    </StackPanel>
+
+                    <!-- 拖拽时顶替整条腰栏的「移到哪一页」放置区 -->
+                    <Grid x:Name="PageDropBar"
+                          Grid.Column="0"
+                          Grid.ColumnSpan="3"
+                          Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="移到："
+                                   FontSize="{x:Static ui:Metrics.FontCaption}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="2,0,6,0" />
+
+                        <ScrollViewer Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      HorizontalAlignment="Stretch">
+                            <StackPanel x:Name="PageDropChips"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center" />
+                        </ScrollViewer>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+      </Border>
+
+        <!--
+            拖文件进来的提示。原来是 95% 不透明的整块蓝，把面板内容全遮住了 ——
+            看不见东西落在哪，反而不好判断。改成淡蓝蒙层 + 虚线落区 + 说明胶囊。
+        -->
+        <Border x:Name="DragOverlay"
+                Background="#142F6FEB"
+                CornerRadius="14"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <Grid>
+                <Rectangle Margin="6"
+                           RadiusX="12" RadiusY="12"
+                           StrokeThickness="2"
+                           StrokeDashArray="6 4"
+                           Stroke="{StaticResource Accent500Brush}" />
+                <Border Background="{StaticResource PanelBrush}"
+                        CornerRadius="8"
+                        Padding="14,7"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="松开即可添加到面板"
+                               FontSize="{x:Static ui:Metrics.FontBody}"
+                               Foreground="{StaticResource Accent700Brush}" />
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quicker 复刻方案研究报告</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1a1d21; --ink2:#4a5158; --ink3:#7d868f;
+    --line:#e5e8ec; --accent:#2f6feb; --accent-soft:#eef4ff;
+    --green:#1a7f47; --green-soft:#eaf7ef; --amber:#9a6400; --amber-soft:#fff6e5;
+    --red:#b42318; --red-soft:#fdeceb; --purple:#6b3fa0; --purple-soft:#f3edfb;
+    --mono:"Cascadia Code","JetBrains Mono",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:48px 28px 80px}
+  header{border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:36px}
+  .kicker{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink3); font-weight:600}
+  h1{font-size:30px; margin:8px 0 10px; letter-spacing:-.01em; line-height:1.3}
+  .sub{color:var(--ink2); font-size:15px; margin:0}
+  .meta{margin-top:14px; font-size:13px; color:var(--ink3)}
+  h2{font-size:20px; margin:44px 0 14px; padding-top:14px; border-top:1px solid var(--line); letter-spacing:-.01em}
+  h2:first-of-type{border-top:none; padding-top:0}
+  h3{font-size:16px; margin:26px 0 10px; color:var(--ink)}
+  p{margin:10px 0; color:var(--ink2)}
+  ul,ol{margin:10px 0; padding-left:22px; color:var(--ink2)}
+  li{margin:5px 0}
+  code{font-family:var(--mono); font-size:.88em; background:#f0f2f5; padding:1.5px 5px; border-radius:4px; color:#b4245a}
+  pre{background:#1e2126; color:#e6e9ed; padding:16px 18px; border-radius:10px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.65; margin:14px 0}
+  pre code{background:none; color:inherit; padding:0; font-size:inherit}
+  .cmt{color:#7d8792}
+  .kw{color:#7fb3ff}
+  .str{color:#a5d6a7}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 22px; margin:16px 0}
+  .tldr{background:var(--accent-soft); border:1px solid #cfe0ff; border-radius:12px; padding:20px 22px; margin:20px 0}
+  .tldr h3{margin-top:0; color:var(--accent)}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:#f2f4f7; font-weight:600; color:var(--ink); font-size:13px; white-space:nowrap}
+  td{color:var(--ink2)}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap}
+  .t-must{background:var(--red-soft); color:var(--red)}
+  .t-core{background:var(--accent-soft); color:var(--accent)}
+  .t-later{background:#f0f2f5; color:var(--ink3)}
+  .t-ok{background:var(--green-soft); color:var(--green)}
+  .t-warn{background:var(--amber-soft); color:var(--amber)}
+  .pit{display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--line)}
+  .pit:last-child{border-bottom:none}
+  .pit .num{flex:0 0 30px; height:30px; border-radius:8px; background:var(--ink); color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center}
+  .pit .body{flex:1; min-width:0}
+  .pit .body b{display:block; font-size:15px; margin-bottom:3px; color:var(--ink)}
+  .pit .body p{margin:4px 0; font-size:14px}
+  .fix{font-size:13.5px; color:var(--green); background:var(--green-soft); border-radius:6px; padding:6px 10px; margin-top:8px; display:block}
+  .steps{counter-reset:s; list-style:none; padding:0; margin:18px 0}
+  .steps>li{counter-increment:s; position:relative; padding:0 0 20px 46px; border-left:2px solid var(--line); margin-left:14px}
+  .steps>li:last-child{border-left-color:transparent; padding-bottom:0}
+  .steps>li::before{content:counter(s); position:absolute; left:-15px; top:-2px; width:28px; height:28px; border-radius:50%; background:var(--card); border:2px solid var(--accent); color:var(--accent); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center}
+  .steps>li b{display:block; color:var(--ink); font-size:15px; margin-bottom:2px}
+  .steps>li .dur{font-size:12px; color:var(--ink3); font-weight:600; margin-left:8px}
+  .steps>li p{margin:4px 0; font-size:14px}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .mini{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px}
+  .mini b{display:block; font-size:13.5px; margin-bottom:6px}
+  .mini ul{padding-left:18px; margin:0; font-size:13.5px}
+  .reco{border:2px solid var(--accent); background:var(--accent-soft)}
+  .reco b{color:var(--accent)}
+  footer{margin-top:52px; padding-top:20px; border-top:1px solid var(--line); font-size:13px; color:var(--ink3)}
+  .quote{border-left:3px solid var(--line); padding-left:14px; color:var(--ink3); font-size:14px; margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">技术研究报告 · Windows 桌面工具</div>
+  <h1>复刻 Quicker：快速启动面板的最小可行方案</h1>
+  <p class="sub">拆解 Quicker 的核心交互，梳理 Windows 平台实现这类工具的全部技术难点，给出可落地的架构与分阶段路线。</p>
+  <div class="meta">目标功能边界：全局快捷键唤出面板 · 面板内添加/启动 应用·文件夹·文件 · 基本增删改与搜索</div>
+</header>
+
+<div class="tldr">
+  <h3>结论速览</h3>
+  <p>你要做的这个东西，本质上是四件事的组合：<b>一个常驻托盘的后台进程</b> + <b>一个全局热键监听器</b> + <b>一个置顶无边框的网格面板</b> + <b>一个「路径 → 图标 → Shell 启动」的执行层</b>。</p>
+  <p>技术难度不高，但<b>有 8 个 Windows 平台特有的坑</b>，几乎每一个都会让新手卡住半天到一天。这些坑（前台焦点锁、图标句柄泄漏、网络路径卡死、单实例、热键冲突）才是这个项目真正的成本所在，而不是 UI。</p>
+  <p><b>推荐栈：C# WPF + .NET 8</b>。理由：Quicker 本身就是 .NET 技术栈，Win32 API 调用最顺，启动快、内存低（30–60MB，Electron 要 150MB+），图标/热键/托盘全部原生支持。</p>
+  <p><b>Rust 是第二条可行路线，而且不差</b>——用 Tauri 2 可以做到 5–10MB 体积、UI 用 HTML/CSS 自由发挥，已经有 ReFast、一点 OnePoint 这样的成熟先例（详见第五节）。代价是图标提取要手写 FFI，以及编译慢会拖累 UI 调优的节奏。<b>若只想 1 小时内看到能跑的原型，用 Python + PySide6</b>，代码量能少一半。</p>
+</div>
+
+<h2>一、Quicker 是怎么工作的</h2>
+
+<p>先把产品拆开看。Quicker 官方文档里有一句话精准概括了它的核心循环：</p>
+<div class="quote">选择要操作的对象 → 弹出面板 → 选择动作 → 自动关闭</div>
+
+<p>这个「四步循环」就是它的灵魂。面板不是常驻的，而是<b>瞬时唤出、用完即走</b>的。理解这一点，才能理解后面所有的设计取舍——比如为什么面板必须抢键盘焦点、为什么执行完动作要立刻隐藏。</p>
+
+<h3>面板的物理结构</h3>
+<p>Quicker 的面板窗口由四个区域构成，从上到下：</p>
+<ul>
+  <li><b>标题栏</b>：设置、钉住（Pin）、菜单、关闭。钉住后面板不再自动隐藏，用于连续操作。</li>
+  <li><b>全局面板区</b>：不随前台程序切换，放跨场景通用的动作。</li>
+  <li><b>上下文面板区</b>：<b>随当前前台窗口自动切换</b>。在 Chrome 里显示 Chrome 的动作页，在 VS Code 里显示 VS Code 的。没配置过场景的软件，回落到「通用」动作页。</li>
+  <li><b>腰栏</b>：当前动作页名、翻页指示点、搜索、锁定（暂停自动切换）、工具箱。</li>
+</ul>
+
+<p>面板是<b>网格布局</b>的——不是列表。默认一行 5 个格子，动作以图标+文字的形式排布，鼠标滚轮翻页。这跟「搜索式启动器」（PowerToys Run / Flow Launcher 那种一条输入框）是完全不同的交互哲学：<b>网格靠肌肉记忆，搜索靠打字</b>。</p>
+
+<h3>触发与关闭</h3>
+<div class="grid2">
+  <div class="mini">
+    <b>唤出方式</b>
+    <ul>
+      <li>鼠标中键点击</li>
+      <li><b>单击 Ctrl 键</b>（Quicker 的招牌）</li>
+      <li>全局快捷键组合</li>
+      <li>按住鼠标键滑动 / 触发浮标</li>
+    </ul>
+  </div>
+  <div class="mini">
+    <b>关闭方式</b>
+    <ul>
+      <li>执行完一个动作后<b>自动隐藏</b></li>
+      <li>点击面板外部任意位置</li>
+      <li>按 ESC / 再按一次中键</li>
+      <li>点右上角 ×</li>
+    </ul>
+  </div>
+</div>
+
+<p>注意「单击 Ctrl 唤出」和「点击面板外部隐藏」这两条——它们决定了<b>必须用底层键盘/鼠标钩子（Hook），而不是 RegisterHotKey</b>，因为 RegisterHotKey 无法注册「单个 Ctrl 键」这种无修饰键的操作，也无法监听全局鼠标点击。这是选型上的第一个分水岭。</p>
+
+<h2>二、MVP 功能边界</h2>
+
+<p>你说的「不要那么全，至少要有基本功能」，我把它翻译成一张明确的功能清单。把范围钉死，是实现速度的关键。</p>
+
+<table>
+  <thead><tr><th>功能</th><th>优先级</th><th>实现要点</th></tr></thead>
+  <tbody>
+    <tr><td>全局快捷键唤出/隐藏面板</td><td><span class="tag t-must">必须</span></td><td>先 <code>RegisterHotKey</code>，进阶换键盘钩子</td></tr>
+    <tr><td>托盘图标 + 右键菜单 + 退出</td><td><span class="tag t-must">必须</span></td><td>没有托盘就没有常驻，也无法退出</td></tr>
+    <tr><td>面板网格 UI（图标 + 名称）</td><td><span class="tag t-must">必须</span></td><td>ItemsControl + UniformGrid</td></tr>
+    <tr><td>拖拽文件/文件夹进面板自动添加</td><td><span class="tag t-must">必须</span></td><td><code>AllowDrop</code> + <code>DataFormats.FileDrop</code>，最顺手的添加入口</td></tr>
+    <tr><td>提取并显示文件图标</td><td><span class="tag t-must">必须</span></td><td><code>SHGetFileInfo</code> → HIcon → BitmapSource，需缓存</td></tr>
+    <tr><td>点击启动（应用/文件夹/文件/网址）</td><td><span class="tag t-must">必须</span></td><td><code>Process.Start</code> + <code>UseShellExecute=true</code></td></tr>
+    <tr><td>右键菜单：重命名 / 删除 / 编辑路径</td><td><span class="tag t-core">核心</span></td><td>ContextMenu 绑定到每个格子</td></tr>
+    <tr><td>搜索过滤（模糊匹配）</td><td><span class="tag t-core">核心</span></td><td>对已添加项目做子序列打分，无需索引</td></tr>
+    <tr><td>配置持久化 + 单实例</td><td><span class="tag t-core">核心</span></td><td>config.json；Mutex + 命名管道</td></tr>
+    <tr><td>跟随鼠标定位 / 屏幕居中</td><td><span class="tag t-core">核心</span></td><td>多显示器 DPI 要处理</td></tr>
+    <tr><td>多动作页 + 分组翻页</td><td><span class="tag t-later">进阶</span></td><td>数据结构预留 Page 概念即可</td></tr>
+    <tr><td>上下文自动切换（按前台进程）</td><td><span class="tag t-later">进阶</span></td><td><code>GetForegroundWindow</code> + 进程名映射</td></tr>
+    <tr><td>扫描开始菜单 / 已安装软件列表</td><td><span class="tag t-later">进阶</span></td><td>枚举 .lnk + 读注册表 Uninstall 项</td></tr>
+    <tr><td>Everything 式全盘文件搜索</td><td><span class="tag t-later">进阶</span></td><td>接 Everything SDK 或自读 USN Journal</td></tr>
+    <tr><td>组合动作 / 脚本引擎</td><td><span class="tag t-later">暂缓</span></td><td>这是 Quicker 真正的护城河，先不做</td></tr>
+  </tbody>
+</table>
+
+<p><b>砍掉的部分</b>：账号体系、动作库/分享、组合动作编程、截图贴图、手机 App 联动、云同步。这些是 Quicker 的商业化与生态部分，跟「复刻基本体验」无关。</p>
+
+<h2>三、八个必须提前知道的坑</h2>
+
+<p>这一节是整份报告最有价值的部分。下面每一条，都是我基于 Windows 平台机制推演出的、这类工具绕不开的问题。</p>
+
+<div class="card">
+
+  <div class="pit">
+    <div class="num">1</div>
+    <div class="body">
+      <b>前台焦点锁：SetForegroundWindow 会静默失败</b>
+      <p>Windows 有一条「前台窗口锁定」策略：如果一个进程当前不在前台，它调用 <code>SetForegroundWindow</code> 只会让任务栏图标闪烁，而<b>不会真的把窗口拉到前台</b>。这是为了防恶意弹窗。你的热键是在后台进程里按下的，所以面板弹出来很可能<b>拿不到键盘焦点</b>——用户一打字，字跑到别的窗口去了。</p>
+      <span class="fix">解决：把自己的线程 <code>AttachThreadInput</code> 到当前前台窗口的线程，调用 SetForegroundWindow，再 detach；或临时把窗口设成 TopMost 后立刻复位。这是最经典的绕法。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">2</div>
+    <div class="body">
+      <b>图标句柄泄漏：GDI 对象涨到 1 万就崩</b>
+      <p><code>SHGetFileInfo</code> 返回的 <code>HICON</code> 是<b>非托管资源</b>，转成 WPF 的 <code>BitmapSource</code> 后如果忘记 <code>DestroyIcon</code>，每个图标泄漏一个 GDI 句柄。Windows 单进程 GDI 句柄上限约 1 万，一个面板几百个图标来回刷新，很快就炸。</p>
+      <span class="fix">解决：转换完成后立即 <code>DestroyIcon</code>；并且<b>必须做图标缓存</b>（key = 路径 + 文件修改时间），磁盘缓存到本地目录。Quicker 专门有个「图标缓存」目录就是干这个的。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">3</div>
+    <div class="body">
+      <b>网络路径会让 UI 卡死数秒</b>
+      <p>如果添加的是网络共享（<code>\\server\share\...</code>）或已断开的移动硬盘上的文件，<code>SHGetFileInfo</code> 会同步等待超时，<b>最长可卡 30 秒</b>，而它是在 UI 线程调用的——面板直接假死。</p>
+      <span class="fix">解决：图标提取全部丢到后台线程池异步做，先显示占位图标，提取完再刷新；对文件夹用 <code>SHGFI_USEFILEATTRIBUTES</code> 直接取通用文件夹图标，不实际访问磁盘。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">4</div>
+    <div class="body">
+      <b>UseShellExecute=false 会让 .lnk / .url 打不开</b>
+      <p>用 <code>Process.Start(path)</code> 启动快捷方式时，如果 <code>ProcessStartInfo</code> 的 <code>UseShellExecute</code> 是 <code>false</code>，.lnk 会被当成二进制文件直接执行，报错或什么都不发生。<b>必须设成 <code>true</code></b>，让它走 Windows Shell 的文件关联。</p>
+      <span class="fix">解决：统一 <code>new ProcessStartInfo(path){ UseShellExecute = true, WorkingDirectory = dir }</code>。「以管理员运行」则改 <code>Verb = "runas"</code>。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">5</div>
+    <div class="body">
+      <b>热键注册冲突：RegisterHotKey 返回 false 不代表你的代码错了</b>
+      <p>别的软件已经占用了同一个组合键（比如微信占 Alt+A，输入法占 Ctrl+Space），你的注册就会失败。而且<b>失败是静默的</b>，用户按了没反应，你会以为是代码 bug。</p>
+      <span class="fix">解决：注册失败时弹提示让用户换键；把「是否注册成功」作为设置界面的一等状态显示出来。默认键建议用冷门组合，如 <code>Alt+Space</code> 已可能被占用，用 <code>Ctrl+Alt+Q</code> 更稳。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">6</div>
+    <div class="body">
+      <b>底层钩子会被杀软误报、被系统超时踢掉</b>
+      <p>要实现「单击 Ctrl 唤出」，必须装 <code>WH_KEYBOARD_LL</code> 低级键盘钩子。这类钩子（连同 <code>WH_MOUSE_LL</code>）是键盘记录器的标准技术，<b>大概率会被 Windows Defender 或国产杀软拦截/报毒</b>。另外系统有 <code>LowLevelHooksTimeout</code>（默认 300ms），钩子回调里做耗时操作会被系统摘掉。</p>
+      <span class="fix">解决：钩子回调里只做「记录状态 + PostMessage」，绝不做实际业务；需要数字签名才能减轻误报。MVP 阶段建议先用 RegisterHotKey 绕开整个问题。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">7</div>
+    <div class="body">
+      <b>多显示器 + 高 DPI 下坐标全乱</b>
+      <p>用户有 2 个不同缩放比的显示器（比如主屏 150%、副屏 100%）时，<code>Cursor.Position</code> 拿到的是物理像素，而 WPF 用的是逻辑单位，面板会弹到错误的位置甚至屏幕外。</p>
+      <span class="fix">解决：用 <code>GetCursorPos</code> 拿物理坐标 → 用 <code>MonitorFromPoint</code> + <code>GetDpiForMonitor</code> 拿到该屏幕的 DPI → 换算后再定位。WinForms 的 <code>Screen.FromPoint</code> 也能帮忙，但 DPI 仍需单独处理。</span>
+    </div>
+  </div>
+
+  <div class="pit">
+    <div class="num">8</div>
+    <div class="body">
+      <b>单实例：用户双击两次图标会开出两个进程</b>
+      <p>两个实例意味着两套托盘图标、两次热键注册（第二次必然失败）、两份配置互相覆盖。</p>
+      <span class="fix">解决：命名 <code>Mutex</code> 做单实例检测；第二个实例通过命名管道（<code>NamedPipeServerStream</code>）向第一个实例发一条「唤出面板」消息，然后自己退出。</span>
+    </div>
+  </div>
+
+</div>
+
+<h3>换个语言，这 8 个坑能省掉多少？</h3>
+
+<p>直接回答一个常见疑问：<b>C# 的坑会更少吗？答案是——坑的总数不会少，但每个坑的填坑成本低很多。</b>因为这 8 条里有一半是 Win32 机制层面的问题，跟语言无关；真正拉开差距的是「有没有现成封装可以直接抄」。</p>
+
+<table>
+  <thead><tr><th>八个坑</th><th>C# / WPF</th><th>Rust / Tauri</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>① 前台焦点锁</td>
+      <td><span class="tag t-warn">中</span> 要写 AttachThreadInput，但现成答案极多</td>
+      <td><span class="tag t-warn">中</span> 同样要写，且要手搓 FFI 签名</td>
+    </tr>
+    <tr>
+      <td>② 图标提取</td>
+      <td><span class="tag t-ok">易</span> 两行：SHGetFileInfo + CreateBitmapSourceFromHIcon</td>
+      <td><span class="tag t-must">难</span> GetIconInfo → DIB → DrawIconEx → 读像素，5 个资源手动释放</td>
+    </tr>
+    <tr>
+      <td>③ 网络路径卡死</td>
+      <td><span class="tag t-ok">易</span> async/await 成熟，后台线程池顺手</td>
+      <td><span class="tag t-warn">中</span> spawn_blocking 可用，但要注意 COM 线程模型</td>
+    </tr>
+    <tr>
+      <td>④ .lnk 打不开</td>
+      <td><span class="tag t-ok">易</span> UseShellExecute 默认就是 true</td>
+      <td><span class="tag t-warn">中</span> opener 够用，但 runas verb 要自己调</td>
+    </tr>
+    <tr>
+      <td>⑤ 热键冲突</td>
+      <td><span class="tag t-ok">易</span> 封装库多，能拿到失败原因</td>
+      <td><span class="tag t-ok">易</span> global-hotkey 已封装</td>
+    </tr>
+    <tr>
+      <td>⑥ 钩子超时 / 杀软误报</td>
+      <td><span class="tag t-must">难</span> 无签名 .NET + 键盘钩子，误报率偏高</td>
+      <td><span class="tag t-must">难</span> 一样难，回调还要跨 FFI 边界</td>
+    </tr>
+    <tr>
+      <td>⑦ 多屏 DPI</td>
+      <td><span class="tag t-warn">中</span> Screen API + PerMonitorV2 有成熟做法</td>
+      <td><span class="tag t-warn">中</span> 要自己算 scale factor</td>
+    </tr>
+    <tr>
+      <td>⑧ 单实例</td>
+      <td><span class="tag t-ok">易</span> Mutex + 命名管道，示例满天飞</td>
+      <td><span class="tag t-ok">易</span> single-instance crate</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><b>合计：C# 是 5 易 2 中 1 难；Rust 是 2 易 4 中 2 难。</b>差距集中在「图标提取」和「有没有现成封装」这两件事上——也就是「跟操作系统打交道」的那部分成本，.NET 的 BCL 和 WPF 已经替你付了 20 年。</p>
+
+<h3>但 C# 也有它自己的坑</h3>
+
+<p>公平起见，说几个只有 C# 路线上才会遇到、Rust 那边没有的问题：</p>
+
+<ul>
+  <li><b>体积和冷启动</b>：self-contained 单文件发布 60–150MB（不开 trimming / AOT），冷启动有 .NET 运行时加载开销。Rust 只有 5–10MB。这是 Rust 碾压 C# 的地方。</li>
+  <li><b><code>AllowsTransparency=True</code> 会禁用硬件加速</b>：WPF 做圆角 / 阴影无边框窗口的常规做法，代价是渲染退回软件层，面板滚动会掉帧、拖动会闪。这是 WPF 专属坑。</li>
+  <li><b>DPI 感知要在 <code>app.manifest</code> 里配</b>：漏配或配错，整个面板在高分屏上就是糊的。</li>
+  <li><b><code>Deactivated</code> 事件会误触发</b>：经典 bug——做「失焦自动隐藏」时，点自己面板里的按钮也可能触发 Deactivated，面板当场消失。必须额外判断焦点是否仍在自己的窗口树内。</li>
+  <li><b>XAML 绑定错误是运行时静默失败</b>：写错了不报错，只是界面上少个东西，调试起来很烦。</li>
+</ul>
+
+<p>所以真正的取舍是：<b>C# 用「更大的体积、更慢的冷启动、更啰嗦的 UI 写法」换「跟 Win32 打交道时的省心」</b>；Rust 正好反过来——用「手写 FFI 的麻烦」换「更小的体积和更自由的 UI」。</p>
+
+<h2>四、技术选型</h2>
+
+<table>
+  <thead><tr><th>方案</th><th>优势</th><th>代价</th><th>适用判断</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>C# WPF<br>.NET 8</b></td>
+      <td>与 Quicker 同栈；Win32 互操作最顺；启动 &lt;1s；内存 30–60MB；图标/热键/托盘全原生；可 AOT 发布单文件</td>
+      <td>仅 Windows；XAML 写 UI 略啰嗦</td>
+      <td><span class="tag t-ok">正式产品首选</span></td>
+    </tr>
+    <tr>
+      <td><b>Python<br>PySide6</b></td>
+      <td>原型最快，代码量约为 C# 的一半；<code>QFileIconProvider</code> 直接给图标；<code>os.startfile</code> 一行启动</td>
+      <td>打包后 80–150MB；启动慢；键盘钩子需装 <code>keyboard</code> 库；内存占用高</td>
+      <td><span class="tag t-warn">快速验证 / 自用</span></td>
+    </tr>
+    <tr>
+      <td><b>Electron</b></td>
+      <td>UI 自由度最高；<code>globalShortcut</code> / <code>app.getFileIcon()</code> / <code>shell.openPath()</code> / <code>Tray</code> 全部开箱即用，几乎没有坑</td>
+      <td>内存 150MB+，启动 1–2s；中键/单击 Ctrl 钩子要写 native 模块，Node 层做不到</td>
+      <td><span class="tag t-warn">UI 优先</span></td>
+    </tr>
+    <tr>
+      <td><b>Tauri 2<br>(Rust)</b></td>
+      <td>体积 5–10MB、内存 30–80MB；前端用 HTML/CSS 写 UI，自由度与 Electron 同级；用系统 WebView2 而不打包 Chromium；已有成熟先例（ReFast）</td>
+      <td>Rust 门槛；<b>图标提取要手写 FFI</b>（无干净轮子）；编译慢，首次 3–10 分钟、增量 30 秒–2 分钟；依赖 WebView2 运行时</td>
+      <td><span class="tag t-ok">体积 + UI 首选</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="card reco">
+  <b>推荐路径</b>
+  <p style="margin-bottom:6px">如果你的目标是<b>做一个能长期用、真正替代 Quicker 的工具</b> → 直接上 <b>C# WPF + .NET 8</b>。前面 8 个坑，C# 方案里有 6 个是「写几行 P/Invoke 就解决」，而 Python/Electron 方案里同样的问题要么绕不过去，要么得装一堆不稳定的第三方库。</p>
+  <p style="margin:0">如果目标只是<b>先跑起来看效果、验证交互手感</b> → 用 <b>Python + PySide6</b>，一个下午能出可运行的 demo，之后再决定要不要迁移。</p>
+</div>
+
+<h2>五、Rust 路线详解</h2>
+
+<p>结论先说：<b>Rust 完全可行，而且对这个项目来说是个相当合理的选择。</b>技术风险已经被别人趟平了——<b>ReFast</b>（基于 Tauri 2 的 Windows 快速启动器，MIT 协议）已经实现了全局热键、托盘、图标提取与缓存、Everything 集成、失去焦点自动关闭搜索框这一整套；<b>一点 OnePoint</b> 也是 Tauri 2 + Rust 写的键位启动器，默认 Alt+Space 唤出面板。</p>
+
+<p>但必须说清楚一件事：<b>第三节那 8 个坑，一个都不会消失。</b>你只是把 C# 的 <code>[DllImport]</code> 换成了 Rust 的 FFI 绑定——该懂的 Win32 机制（前台焦点锁、HICON 释放、UseShellExecute、多屏 DPI）一点都不能少。</p>
+
+<h3>三种形态</h3>
+
+<table>
+  <thead><tr><th>形态</th><th>体积 / 内存</th><th>UI 方式</th><th>难点</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Tauri 2</b><br><span class="tag t-ok">推荐</span></td>
+      <td>5–10 MB<br>30–80 MB</td>
+      <td>Rust 后端 + WebView2 前端（React / Vue / 原生 HTML 都行）</td>
+      <td>图标提取要手写 FFI；依赖 WebView2 运行时（Win10/11 基本自带）</td>
+    </tr>
+    <tr>
+      <td><b>egui / iced</b><br><span class="tag t-later">纯原生</span></td>
+      <td>2–5 MB<br>15–40 MB</td>
+      <td>纯 Rust 立即模式 GUI，零 WebView2 依赖</td>
+      <td>网格面板、拖拽、图标渲染<b>全部手写</b>，UI 迭代成本高</td>
+    </tr>
+    <tr>
+      <td><b>native-windows-gui</b></td>
+      <td>2–4 MB<br>15–30 MB</td>
+      <td>Win32 API 的 Rust 封装</td>
+      <td>最接近「用 Rust 写 Win32」，但生态小、文档少</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>各环节的 crate 映射</h3>
+
+<p>这张表是 Rust 路线的落地清单——每个需求对应哪个库，以及有没有坑。</p>
+
+<table>
+  <thead><tr><th>要做的事</th><th>Rust 方案</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>全局热键</td><td><code>global-hotkey</code></td><td>tauri-apps 官方维护，内部就是 RegisterHotKey。<b>同样不支持「单击 Ctrl」</b></td></tr>
+    <tr><td>单击 Ctrl / 鼠标中键唤出</td><td><code>windows</code> + <code>SetWindowsHookExW</code></td><td>没有现成好用的 crate，得自己实现 WH_KEYBOARD_LL 钩子</td></tr>
+    <tr><td>托盘图标</td><td><code>tray-icon</code></td><td>tauri-apps 官方维护，稳定可用</td></tr>
+    <tr><td><b>提取文件图标</b></td><td><code>windows</code> + <code>SHGetFileInfoW</code></td><td><span class="tag t-warn">最磨人的一环</span> HICON → RGBA 要自己走 GetIconInfo / DIB section / DrawIconEx</td></tr>
+    <tr><td>启动程序 / 文件 / 网址</td><td><code>opener</code></td><td>内部走 ShellExecuteW，语义正确（相当于 C# 的 UseShellExecute=true）</td></tr>
+    <tr><td>以管理员身份运行</td><td><code>windows</code> + <code>ShellExecuteW</code></td><td><code>opener</code> 不暴露 verb，得自己传 <code>runas</code></td></tr>
+    <tr><td>单实例</td><td><code>single-instance</code></td><td>Mutex + IPC，与 Tauri 集成良好</td></tr>
+    <tr><td>开机自启</td><td><code>tauri-plugin-autostart</code> / <code>auto-launch</code></td><td>写注册表 Run 项</td></tr>
+    <tr><td>读已安装软件 / 注册表</td><td><code>winreg</code></td><td>枚举 Uninstall 项拿 DisplayIcon 与 InstallLocation</td></tr>
+    <tr><td>配置持久化</td><td><code>serde</code> + <code>serde_json</code> + <code>directories</code></td><td>自动定位到 %AppData%</td></tr>
+    <tr><td>文件选择对话框</td><td><code>rfd</code></td><td>原生对话框，用于「手动添加路径」</td></tr>
+    <tr><td>Everything 全盘搜索</td><td>FFI 调 <code>Everything64.dll</code></td><td>ReFast 就是这么集成的</td></tr>
+  </tbody>
+</table>
+
+<h3>图标提取：Rust 路线最大的痛点</h3>
+
+<p>同一件事，对比一下两个语言的工作量。C# 是这样，两行就完事：</p>
+
+<pre><code><span class="kw">var</span> shfi = <span class="kw">new</span> SHFILEINFO();
+SHGetFileInfo(path, 0, <span class="kw">ref</span> shfi, (<span class="kw">uint</span>)Marshal.SizeOf(shfi), SHGFI_ICON | SHGFI_LARGEICON);
+<span class="kw">return</span> Imaging.CreateBitmapSourceFromHIcon(shfi.hIcon, IntPtr.Zero, BitmapSizeOptions.FromEmptyOptions());
+<span class="cmt">// 转完 DestroyIcon 一调就收工</span></code></pre>
+
+<p>Rust 要这样（示意代码，省略了错误处理与 premultiply 细节）：</p>
+
+<pre><code><span class="kw">unsafe</span> {
+    <span class="kw">let mut</span> shfi: SHFILEINFO = std::mem::zeroed();
+    SHGetFileInfoW(PCWSTR(wide.as_ptr()), FILE_ATTRIBUTE_NORMAL,
+        Some(&amp;<span class="kw">mut</span> shfi), size_of::&lt;SHFILEINFO&gt;() <span class="kw">as</span> u32,
+        SHGFI_ICON | SHGFI_LARGEICON);
+
+    <span class="cmt">// 1. HICON 本身不含像素数据，得先问系统要它的 bitmap</span>
+    <span class="kw">let mut</span> info: ICONINFO = std::mem::zeroed();
+    GetIconInfo(shfi.hIcon, &amp;<span class="kw">mut</span> info);
+
+    <span class="cmt">// 2. 建一个 32 位带 alpha 的 DIB section 当画布</span>
+    <span class="kw">let</span> bmi = BITMAPINFO { bmiHeader: BITMAPINFOHEADER {
+        biSize: size_of::&lt;BITMAPINFOHEADER&gt;() <span class="kw">as</span> u32,
+        biWidth: w, biHeight: -h,        <span class="cmt">// 负高度 = 自上而下</span>
+        biPlanes: 1, biBitCount: 32, biCompression: BI_RGB.0, ..Default::default()
+    }, ..Default::default() };
+    <span class="kw">let mut</span> bits: *<span class="kw">mut</span> c_void = null_mut();
+    <span class="kw">let</span> dc  = GetDC(None);
+    <span class="kw">let</span> dib = CreateDIBSection(dc, &amp;bmi, DIB_RGB_COLORS, &amp;<span class="kw">mut</span> bits, None, 0);
+
+    <span class="cmt">// 3. 把图标画到画布上</span>
+    DrawIconEx(dc, 0, 0, shfi.hIcon, w, h, 0, None, DI_NORMAL);
+
+    <span class="cmt">// 4. 从 bits 读出 BGRA 像素，交给 image crate</span>
+    <span class="kw">let</span> px  = std::slice::from_raw_parts(bits <span class="kw">as</span> *<span class="kw">const</span> u8, (w * h * 4) <span class="kw">as</span> usize);
+    <span class="kw">let</span> img = RgbaImage::from_raw(w <span class="kw">as</span> u32, h <span class="kw">as</span> u32, premultiply(px)).unwrap();
+
+    <span class="cmt">// 5. 五个资源全部手动释放，漏一个就泄漏</span>
+    DeleteObject(dib);  ReleaseDC(None, dc);
+    DeleteObject(info.hbmColor);  DeleteObject(info.hbmMask);
+    DestroyIcon(shfi.hIcon);
+}</code></pre>
+
+<p>ReFast 的作者在实现图标提取时，额外做了一套 <b>PowerShell 兜底的提取方案</b>，并加了「图标提取失败标记」避免重复尝试——这本身就是「原生 FFI 方案不够顺手」的信号。这是你选 Rust 前最该知道的一件事。</p>
+
+<h3>Rust 的取舍</h3>
+
+<div class="grid2">
+  <div class="mini">
+    <b>比 C# 强的地方</b>
+    <ul>
+      <li>体积 5–10MB、内存 30–80MB，比 Electron 低一半以上</li>
+      <li>UI 用 HTML/CSS 写，面板能做得比 WPF 好看得多，动效也容易</li>
+      <li>内存安全，不用担心托管/非托管混用那类隐性 bug</li>
+      <li>产物无运行时依赖（Tauri 需 WebView2，但 Win10/11 基本自带）</li>
+      <li>跨平台潜力：同样的代码之后能出 macOS 版</li>
+    </ul>
+  </div>
+  <div class="mini">
+    <b>比 C# 弱的地方</b>
+    <ul>
+      <li><b>图标提取没有干净的轮子</b>，得自己写一套 HICON → RGBA</li>
+      <li><b>编译慢</b>：首次 3–10 分钟，增量改一行 30 秒–2 分钟。而这类工具最需要「反复调 UI 手感」，慢反馈会明显拖节奏</li>
+      <li>所有 Win32 调用都要手写 FFI 签名，没有 C# 那种现成封装库</li>
+      <li>低级键盘钩子的回调跨 FFI 边界，更容易踩到微妙的坑</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card reco">
+  <b>Rust 路线的建议</b>
+  <ul style="margin:6px 0 0">
+    <li>想要<b>小体积 + 好看的 UI + 现代技术栈</b>，不介意慢编译 → 选 <b>Tauri 2</b>，架构直接对着 ReFast 抄</li>
+    <li>想要<b>纯原生、极致轻量、零 WebView2 依赖</b> → 选 <b>egui</b>，但做好手写网格面板与图标渲染的准备</li>
+    <li>只想<b>最快跑通、最省心</b> → <b>C# WPF 仍然是最优解</b>（图标提取两行、无需 FFI）</li>
+    <li>只想<b>先验证交互手感</b> → <b>Python + PySide6</b>，一个下午出可运行 demo</li>
+  </ul>
+</div>
+
+<h2>六、架构设计</h2>
+
+<h3>模块划分</h3>
+<pre><code>QuickerClone/
+├── App.xaml / App.xaml.cs        <span class="cmt">// 单实例检测、托盘、生命周期</span>
+├── Core/
+│   ├── HotkeyService.cs          <span class="cmt">// RegisterHotKey + WndProc 消息循环</span>
+│   ├── ShellLauncher.cs          <span class="cmt">// Process.Start 封装（含 runas）</span>
+│   ├── IconService.cs            <span class="cmt">// SHGetFileInfo → BitmapSource + 磁盘缓存</span>
+│   ├── ConfigStore.cs            <span class="cmt">// config.json 读写 + 变更通知</span>
+│   ├── SingleInstance.cs         <span class="cmt">// Mutex + NamedPipe 唤醒</span>
+│   └── StartupManager.cs         <span class="cmt">// 开机自启（注册表 Run 项）</span>
+├── Models/
+│   ├── ActionItem.cs             <span class="cmt">// 单个格子：名称/路径/类型/参数/图标</span>
+│   ├── Page.cs                   <span class="cmt">// 动作页：一组格子 + 行列数</span>
+│   └── Profile.cs                <span class="cmt">// 场景：进程名 → 动作页映射</span>
+├── UI/
+│   ├── PanelWindow.xaml          <span class="cmt">// 主面板（无边框、置顶、自动隐藏）</span>
+│   ├── ActionButton.xaml         <span class="cmt">// 单个格子控件（图标+文字+右键菜单）</span>
+│   └── SettingsWindow.xaml       <span class="cmt">// 设置：热键、外观、开机自启</span>
+└── Interop/
+    └── NativeMethods.cs          <span class="cmt">// 所有 P/Invoke 签名集中放这里</span></code></pre>
+
+<h3>数据模型</h3>
+<pre><code><span class="cmt">// 一个格子</span>
+<span class="kw">class</span> ActionItem {
+  <span class="kw">string</span> Id, Name;
+  <span class="kw">string</span> TargetPath;              <span class="cmt">// 文件/文件夹/程序/URL 路径</span>
+  ItemType Type;                  <span class="cmt">// App | Folder | File | Url | Command</span>
+  <span class="kw">string</span>? Arguments, WorkingDir;
+  <span class="kw">bool</span> RunAsAdmin;
+  <span class="kw">string</span>? IconCacheKey;            <span class="cmt">// 指向本地缓存图标</span>
+  <span class="kw">string</span>[] Keywords;              <span class="cmt">// 搜索用的额外别名</span>
+}
+
+<span class="cmt">// 一页格子</span>
+<span class="kw">class</span> Page { <span class="kw">string</span> Id, Name; <span class="kw">int</span> Rows = 2, Cols = 5; List&lt;ActionItem&gt; Items; }
+
+<span class="cmt">// 一份完整配置</span>
+<span class="kw">class</span> Config {
+  <span class="kw">string</span> Hotkey = <span class="str">"Ctrl+Alt+Q"</span>;
+  List&lt;Page&gt; GlobalPages;                       <span class="cmt">// 全局面板区</span>
+  Dictionary&lt;<span class="kw">string</span>, List&lt;Page&gt;&gt; Scenes;        <span class="cmt">// 进程名 → 动作页</span>
+  <span class="kw">bool</span> StartWithWindows;
+}</code></pre>
+
+<h3>启动一个项目的完整链路</h3>
+<pre><code>用户点格子
+   → ShellLauncher.Launch(item)
+      → new ProcessStartInfo(item.TargetPath) {
+            UseShellExecute = <span class="kw">true</span>,          <span class="cmt">// 关键！否则 .lnk 打不开</span>
+            WorkingDirectory = item.WorkingDir ?? Path.GetDirectoryName(path),
+            Verb = item.RunAsAdmin ? <span class="str">"runas"</span> : <span class="kw">null</span>
+        }
+      → Process.Start(psi)
+   → 若面板未「钉住」→ HidePanel()
+   → 记录使用频次（用于后续排序/推荐）</code></pre>
+
+<h2>七、关键代码片段（C#）</h2>
+
+<h3>全局热键注册</h3>
+<pre><code>[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern bool</span> RegisterHotKey(IntPtr hWnd, <span class="kw">int</span> id, <span class="kw">uint</span> mod, <span class="kw">uint</span> vk);
+[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern bool</span> UnregisterHotKey(IntPtr hWnd, <span class="kw">int</span> id);
+
+<span class="cmt">// MOD_ALT=0x1, MOD_CONTROL=0x2, MOD_SHIFT=0x4, MOD_WIN=0x8</span>
+<span class="cmt">// 注册 Ctrl+Alt+Q；返回 false 说明被别的软件占用了</span>
+<span class="kw">bool</span> ok = RegisterHotKey(hwnd, HOTKEY_ID, 0x2 | 0x1, 0x51);
+
+<span class="cmt">// 在窗口的 WndProc 里接收</span>
+<span class="kw">const int</span> WM_HOTKEY = 0x0312;
+<span class="kw">if</span> (msg == WM_HOTKEY &amp;&amp; wParam.ToInt32() == HOTKEY_ID)
+    TogglePanel();</code></pre>
+
+<h3>提取文件图标（含释放与缓存）</h3>
+<pre><code>[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+<span class="kw">struct</span> SHFILEINFO { <span class="kw">public</span> IntPtr hIcon; <span class="kw">public int</span> iIcon;
+  [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] <span class="kw">public string</span> szDisplayName;
+  [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]  <span class="kw">public string</span> szTypeName; }
+
+[DllImport(<span class="str">"shell32.dll"</span>, CharSet = CharSet.Unicode)]
+<span class="kw">static extern</span> IntPtr SHGetFileInfo(<span class="kw">string</span> pszPath, <span class="kw">uint</span> attr,
+    <span class="kw">ref</span> SHFILEINFO psfi, <span class="kw">uint</span> cb, <span class="kw">uint</span> flags);
+
+[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern bool</span> DestroyIcon(IntPtr hIcon);
+
+BitmapSource GetIcon(<span class="kw">string</span> path) {
+    <span class="kw">var</span> shfi = <span class="kw">new</span> SHFILEINFO();
+    SHGetFileInfo(path, 0, <span class="kw">ref</span> shfi, (<span class="kw">uint</span>)Marshal.SizeOf(shfi),
+        SHGFI_ICON | SHGFI_LARGEICON);          <span class="cmt">// 0x100 | 0x0</span>
+    <span class="kw">try</span> {
+        <span class="kw">return</span> Imaging.CreateBitmapSourceFromHIcon(
+            shfi.hIcon, IntPtr.Zero, BitmapSizeOptions.FromEmptyOptions());
+    } <span class="kw">finally</span> {
+        DestroyIcon(shfi.hIcon);                 <span class="cmt">// ← 漏掉这行必崩</span>
+    }
+}</code></pre>
+
+<h3>强制把面板拉到前台（破解前台锁）</h3>
+<pre><code>[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern</span> IntPtr GetForegroundWindow();
+[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern uint</span> GetWindowThreadProcessId(IntPtr h, IntPtr pid);
+[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern bool</span> AttachThreadInput(<span class="kw">uint</span> a, <span class="kw">uint</span> b, <span class="kw">bool</span> f);
+[DllImport(<span class="str">"user32.dll"</span>)] <span class="kw">static extern bool</span> SetForegroundWindow(IntPtr hWnd);
+
+<span class="kw">void</span> ForceForeground(IntPtr myWnd) {
+    <span class="kw">var</span> fg = GetForegroundWindow();
+    <span class="kw">uint</span> fgThread = GetWindowThreadProcessId(fg, IntPtr.Zero);
+    <span class="kw">uint</span> myThread = GetWindowThreadProcessId(myWnd, IntPtr.Zero);
+    AttachThreadInput(myThread, fgThread, <span class="kw">true</span>);   <span class="cmt">// 挂到前台线程上</span>
+    SetForegroundWindow(myWnd);
+    AttachThreadInput(myThread, fgThread, <span class="kw">false</span>);  <span class="cmt">// 立刻脱离</span>
+}</code></pre>
+
+<h3>面板窗口的关键属性（XAML）</h3>
+<pre><code>&lt;Window x:Class=<span class="str">"UI.PanelWindow"</span>
+        WindowStyle=<span class="str">"None"</span>  ResizeMode=<span class="str">"NoResize"</span>
+        Topmost=<span class="str">"True"</span>     ShowInTaskbar=<span class="str">"False"</span>
+        SizeToContent=<span class="str">"WidthAndHeight"</span>
+        WindowStartupLocation=<span class="str">"Manual"</span>&gt;
+  <span class="cmt">&lt;!-- Deactivated 事件里 Hide() 实现"点外部自动关闭" --&gt;</span>
+  <span class="cmt">&lt;!-- 但"钉住"状态下要跳过这个逻辑 --&gt;</span>
+&lt;/Window&gt;</code></pre>
+
+<h2>八、分阶段实现路线</h2>
+
+<p>下面前四步已经按 C# WPF 路线落地完成，代码在 <code>D:\projects\quicker\src\QuickerLite\</code>，编译零警告零错误。</p>
+
+<ol class="steps">
+  <li>
+    <b>骨架跑通 <span class="dur">半天</span> <span class="tag t-ok">已完成</span></b>
+    <p>单实例 Mutex + 托盘图标 + 全局热键注册 + 一个空的无边框窗口能弹出来、按 ESC 能隐藏。这一步的价值是<b>把所有环境问题一次性清掉</b>——热键冲突、托盘不显示、窗口抢不到焦点，都在这里暴露。</p>
+  </li>
+  <li>
+    <b>面板与启动 <span class="dur">1–2 天</span> <span class="tag t-ok">已完成</span></b>
+    <p>网格布局 + 拖拽添加（<code>FileDrop</code>）+ 图标提取与缓存 + 点击启动。做完这一步，<b>核心体验就已经成立了</b>——你已经可以往面板里拖 exe 和文件夹，点一下就能打开。</p>
+  </li>
+  <li>
+    <b>可用性打磨 <span class="dur">1–2 天</span> <span class="tag t-ok">已完成</span></b>
+    <p>右键增删改、模糊搜索、配置持久化、热键设置界面、跟随鼠标定位（含多屏 DPI）、执行后自动隐藏。这一步决定它「能不能天天用」。</p>
+  </li>
+  <li>
+    <b>对标 Quicker 的差异化 <span class="dur">3–5 天</span> <span class="tag t-ok">已完成</span></b>
+    <p><b>多动作页与滚轮翻页</b>（腰栏页名 + 圆点指示器 + 页名菜单）、<b>上下文按前台进程自动切换</b>（内置 <code>explorer</code> 场景）、<b>动作页管理</b>（新建 / 重命名 / 删除 / 在全局与场景之间移动，不用再手改 JSON）、<b>单击 Ctrl 唤出</b>（<code>WH_KEYBOARD_LL</code>）、<b>鼠标中键唤出</b>（<code>WH_MOUSE_LL</code>）、<b>开始菜单批量导入</b>（扫描 <code>.lnk</code> / <code>.url</code>，可过滤勾选）、<b>搜索结果按匹配度与使用频次排序</b>、<b>格子拖拽排序</b>（按住格子拖动，落位处显示蓝色插入指示条，拖到边缘自动滚动）、<b>格子跨页拖拽</b>（拖拽时腰栏变成页签区，拖到页签上即搬到那一页）、<b>多选与批量操作</b>（Ctrl / Shift 点击选中，可整组拖拽调序、批量跨页搬移、批量移除）。</p>
+  </li>
+  <li>
+    <b>进阶（可选） <span class="dur">按需</span> <span class="tag t-later">未开始</span></b>
+    <p>接 Everything SDK 做全盘文件搜索、组合动作/脚本引擎、主题皮肤、格子跨页拖拽。</p>
+  </li>
+</ol>
+
+<div class="card">
+  <b>实现阶段新踩到的坑（原方案没预见到）</b>
+  <p><b>① 低级钩子的生命周期与误判。</b>完整的五个坑（委托被 GC 回收、回调 300ms 超时被静默摘钩、自触发死循环、钩子线程、误判）写在项目 <code>README.md</code> 里。其中<b>误判</b>最花时间——难点不是识别 Ctrl，而是排除掉所有「按着 Ctrl 干别的事」：<code>Ctrl+C</code>、<code>Ctrl+左键</code>多选文件、<code>Ctrl+滚轮</code>缩放、先按住 Shift 再点 Ctrl、长时间按住 Ctrl 当修饰键。少排除任何一种，用户都会觉得这个功能在乱弹。</p>
+  <p><b>② 开始菜单的本地化目录联接。</b>中文版 Windows 的开始菜单里同时存在「程序」和「Programs」，<code>程序</code> 是指向 <code>Programs</code> 的 junction。按路径字符串去重挡不住它——两个路径长得完全不一样，指向的却是同一批文件。第一版扫描器把 200 个快捷方式扫成了 353 个。修法是按目录的「真实身份」去重：<code>DirectoryInfo.ResolveLinkTarget(returnFinalTarget: true)</code> 把 junction 解析到最终目标，普通目录用自身 <code>FullName</code>，两者正好能撞上。</p>
+  <p><b>③ 内部拖拽和「拖文件进面板」会互相打架，而且下标数学比看上去脆弱。</b>窗口级的 <code>AllowDrop</code> 只认 <code>FileDrop</code>，格子拖拽一进来就被判成「不支持的格式」——光标变成禁止符号，拖文件用的提示遮罩还会误亮。解法是用自定义剪贴板格式 <code>QuickerLite.Tile</code> 把两者区分开，并在格子区域的处理器里 <code>e.Handled = true</code> 截住事件，不让它冒泡到窗口级。<br>另外「松手应该插到第几位」这段数学有两个陷阱：面板是 <code>WrapPanel</code> 换行网格，<b>只按最近距离算的话，在行尾的空白处松手会插到上一行去</b>，正确做法是先按 Y 定位到行、再在行内按水平中线比较；<b>往右拖时目标下标还要减一</b>，因为被拖的格子会先被摘出去、它后面的下标全部前移一位，漏掉这一步的表现是「往右拖一格没反应，拖两格才动一格」。这段逻辑抽在 <code>Core/TileReorder.cs</code> 里做成纯函数，配了 44 条断言（<code>./test.sh</code>）——纯逻辑必须能脱离界面单独跑，这一点在扫描器那个 bug 上已经验证过一次了。多选之后又补了一条：<b>块搬移的位移量只数「插入点之前的被移项」，不是选区总数</b>；而且「有没有变化」不能用下标判断，不连续的选区（比如下标 0 和 9）可能算出跟原来一模一样的顺序，只能拿结果整表比较。<br>跨页拖拽又暴露了一个 WPF 事件顺序上的细节：窗口级的 <code>AllowDrop</code> 会把「拖到腰栏空白处」当成「移到末尾」，可拖拽期间腰栏已经变成页签区了，落空应该什么都不做。解法是给腰栏自己加一层 <code>DragOver</code>/<code>Drop</code> 并 <code>e.Handled = true</code> 截住它；同时用一个门闩 <code>_dropModeActive</code> 防止「落位回调」和「拖拽结束」两次恢复腰栏、把刚设好的状态提示冲掉。</p>
+</div>
+
+<h2>九、可直接参考的开源项目</h2>
+
+<table>
+  <thead><tr><th>项目</th><th>技术栈</th><th>值得借鉴的地方</th></tr></thead>
+  <tbody>
+    <tr><td><b>ReFast</b></td><td>Rust / Tauri 2</td><td><b>Rust 路线的最佳模板</b>。中文项目，已实现热键、托盘、图标提取与缓存、Everything 集成、失焦自动关闭。选 Tauri 就直接对着它抄架构</td></tr>
+    <tr><td><b>一点 OnePoint</b></td><td>Rust / Tauri 2</td><td>轻量级键位启动器，默认 Alt+Space 唤出面板，适合看最小可用形态</td></tr>
+    <tr><td><b>Flow Launcher</b></td><td>C# / WPF</td><td>插件架构、模糊搜索算法、热键与托盘实现，是 C# 路线最好的模板</td></tr>
+    <tr><td><b>PowerToys Run</b></td><td>C# / WPF</td><td>微软官方出品，代码规范与窗口管理（多屏 DPI）处理非常值得抄</td></tr>
+    <tr><td><b>Dawn Launcher</b></td><td>Electron</td><td>中文项目，功能定位最接近 Quicker 的启动器，可对照交互设计</td></tr>
+  </tbody>
+</table>
+
+<h2>十、下一步</h2>
+
+<p><b>技术栈已经拍板并落地：C# WPF + .NET 8。</b>项目在 <code>D:\projects\quicker\</code>，已经是一个能编译、能跑、能用的完整程序——热键/单击 Ctrl/中键唤出、拖拽添加、多动作页、滚轮翻页、上下文场景、模糊搜索、托盘常驻、单实例、开机自启全部可用。</p>
+
+<p>接下来按价值排序（场景的 UI 入口、开始菜单批量导入、按使用频次排序、格子拖拽排序、格子跨页拖拽、多选与批量操作这六项已经做完了，见第八节）：</p>
+
+<ol>
+  <li><b>读注册表 <code>Uninstall</code> 项补充软件列表</b> —— 有些软件装了不建开始菜单快捷方式。</li>
+  <li><b>接 Everything SDK</b> 做全盘文件搜索（<code>Everything64.dll</code> + FFI）。</li>
+  <li><b>多选框选</b> —— 从空白处拖出一个矩形批量选中，现在只能 Ctrl / Shift 一个个点。</li>
+  <li><b>导入列表延迟加载图标</b> —— 只给可视行提图标，兼顾辨识度和「绝不碰网络路径」这两件事。</li>
+  <li><b>组合动作 / 脚本引擎</b> —— Quicker 真正的护城河，也是一个大工程。</li>
+</ol>
+
+<p>如果 C# 这条路在实际使用中遇到解决不了的问题（最可能的是杀软对全局钩子的持续拦截），Rust + Tauri 2 的退路依然成立：<code>global-hotkey</code> / <code>tray-icon</code> / <code>single-instance</code> 这几个 crate 已经覆盖了大部分坑，唯一需要手写 FFI 的是图标提取。</p>
+
+<footer>
+  Quicker 复刻方案研究报告 · 基于 Quicker 官方文档与 Windows 平台机制整理<br>
+  报告路径：<code>D:\projects\quicker\docs\quicker-clone-plan.html</code><br>
+  实现代码：<code>D:\projects\quicker\src\QuickerLite\</code>
+</footer>
+
+</div>
+</body>
+</html>

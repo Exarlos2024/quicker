@@ -1,0 +1,38 @@
+# ============================================================
+#  行尾规范化
+#
+#  为什么需要这个文件：默认的 core.autocrlf 会在 Windows 上把文本文件的
+#  行尾转成 CRLF。仓库里存的是 LF 没错，但**工作副本**会变成 CRLF ——
+#  而 shell 遇到 CRLF 会把 \r 当成命令的一部分，报
+#  "bad interpreter" 或 "\r: command not found"。
+#  这个项目一半的构建脚本是 .sh，必须锁死 LF。
+# ============================================================
+
+# shell 脚本：任何平台都必须是 LF
+*.sh text eol=lf
+
+# Windows 批处理：反过来，必须是 CRLF。
+# .cmd 在只有 LF 时，部分 goto / 标签语法会行为异常。
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 源码与工程文件：让 git 正常归一化（仓库里存 LF）
+*.cs text
+*.xaml text
+*.csproj text
+*.sln text
+*.json text
+*.md text
+*.html text
+*.manifest text
+
+# 二进制：明确标记，避免 git 尝试做文本转换或生成无意义的 diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.dll binary
+*.pdb binary
+*.snk binary

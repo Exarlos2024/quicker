@@ -1,0 +1,307 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:QuickerLite.UI">
+
+    <!--
+        设计令牌。颜色全部来自 ui:Palette（C# 里的唯一来源），
+        尺寸来自 ui:Metrics。这里只做「Color → Brush」和控件样式的封装。
+
+        注意：{x:Static} 只能用在真正的 double 属性上（Width / Height / FontSize / Padding 不是），
+        Thickness 与 CornerRadius 只能写字面量，改数值时记得两处对齐。
+    -->
+
+    <!-- ══════════════════ 画刷 ══════════════════ -->
+    <SolidColorBrush x:Key="PanelBrush" Color="{x:Static ui:Palette.Panel}" />
+    <SolidColorBrush x:Key="PageBrush" Color="{x:Static ui:Palette.Page}" />
+    <SolidColorBrush x:Key="FillBrush" Color="{x:Static ui:Palette.Fill}" />
+    <SolidColorBrush x:Key="PressedBrush" Color="{x:Static ui:Palette.Pressed}" />
+    <SolidColorBrush x:Key="HoverBrush" Color="{x:Static ui:Palette.Hover}" />
+    <SolidColorBrush x:Key="BorderSoftBrush" Color="{x:Static ui:Palette.BorderSoft}" />
+    <SolidColorBrush x:Key="BorderStrongBrush" Color="{x:Static ui:Palette.BorderStrong}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{x:Static ui:Palette.TextPrimary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{x:Static ui:Palette.TextSecondary}" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="{x:Static ui:Palette.TextTertiary}" />
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="{x:Static ui:Palette.TextDisabled}" />
+    <SolidColorBrush x:Key="Accent50Brush" Color="{x:Static ui:Palette.Accent50}" />
+    <SolidColorBrush x:Key="Accent100Brush" Color="{x:Static ui:Palette.Accent100}" />
+    <SolidColorBrush x:Key="Accent500Brush" Color="{x:Static ui:Palette.Accent500}" />
+    <SolidColorBrush x:Key="Accent700Brush" Color="{x:Static ui:Palette.Accent700}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{x:Static ui:Palette.Danger}" />
+    <SolidColorBrush x:Key="TransparentBrush" Color="Transparent" />
+
+    <!-- ══════════════════ 格子 ══════════════════ -->
+    <!-- 悬停 / 按下在模板里；选中与键盘焦点由外层状态层负责（见 PanelWindow.xaml） -->
+    <Style x:Key="ActionTileStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="10" Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 图标容器。悬停时由灰转白，和格子底色形成双层反馈 ——
+         单靠底色变化在白色面板上只有约 1.05:1 的亮度差，几乎看不见。 -->
+    <Style x:Key="IconBoxStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource FillBrush}" />
+        <Setter Property="CornerRadius" Value="11" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}"
+                         Value="True">
+                <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 数字角标。前 9 格显示，对应 Ctrl+1..9 -->
+    <Style x:Key="IndexBadgeStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PressedBrush}" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsFocusCursor}" Value="True">
+                <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 「＋ 添加」格。虚线框是它唯一的视觉特征，一眼能认出「这里还没填满」 -->
+    <Style x:Key="AddTileStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Rectangle x:Name="Bd" RadiusX="10" RadiusY="10"
+                                   Stroke="{StaticResource BorderStrongBrush}" StrokeThickness="1"
+                                   StrokeDashArray="4 3" Fill="Transparent" />
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Stroke" Value="{StaticResource TextTertiaryBrush}" />
+                            <Setter TargetName="Bd" Property="Fill" Value="{StaticResource PageBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ══════════════════ 命令栏 ══════════════════ -->
+    <!-- 边框宽度恒定 1.5px（未聚焦时透明），这样聚焦切换不会引起布局跳动 -->
+    <Style x:Key="CommandBarStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource FillBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource TransparentBrush}" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Accent500Brush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontBody}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource Accent500Brush}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- 键位片 -->
+    <Style x:Key="KeyCapStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PressedBrush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,2" />
+    </Style>
+
+    <!-- ══════════════════ 腰栏按钮 ══════════════════ -->
+    <Style x:Key="FlatButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontLabel}" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FillBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ToggleFlatButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontLabel}" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FillBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Accent100Brush}" />
+                            <Setter Property="Foreground" Value="{StaticResource Accent700Brush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 纯图标按钮（钉住 / 设置） -->
+    <Style x:Key="IconButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FillBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ══════════════════ 实心 / 描边按钮 ══════════════════ -->
+    <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource Accent500Brush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontLabel}" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Accent700Brush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource FillBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontLabel}" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                            BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ══════════════════ 右键菜单 ══════════════════ -->
+    <!--
+        只换外壳（圆角、描边、阴影、内边距、字体）。
+        MenuItem 的内部模板保持系统默认 —— 子菜单的弹出、屏幕边缘翻转、
+        键盘导航都靠它，重写模板的收益远小于「子菜单点不开」的风险。
+    -->
+    <Style x:Key="PanelContextMenuStyle" TargetType="ContextMenu">
+        <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border CornerRadius="8"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            Margin="8">
+                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="FontSize" Value="{x:Static ui:Metrics.FontLabel}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Padding" Value="10,5" />
+    </Style>
+
+</ResourceDictionary>

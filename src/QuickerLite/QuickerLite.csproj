@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- 关掉隐式 using：WinForms 会注入 System.Windows.Forms / System.Drawing，
+         和 WPF 的 System.Windows 撞名（Application / MessageBox / Size ...），
+         所以所有 using 都显式写出来，避免解析歧义。 -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>QuickerLite</AssemblyName>
+    <RootNamespace>QuickerLite</RootNamespace>
+    <Product>QuickerLite</Product>
+    <Version>0.1.0</Version>
+
+    <!-- 生成时不要弹控制台窗口 -->
+    <DebugType>embedded</DebugType>
+
+    <!-- WFAC010：WinForms 分析器建议用 ApplicationHighDpiMode 而不是 manifest。
+         但本项目是 WPF 应用，只是借用了 WinForms 的 NotifyIcon / Screen，
+         DPI 感知必须写在 app.manifest 里才生效，所以这里忽略该建议。 -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,154 @@
+<Window x:Class="QuickerLite.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:QuickerLite.UI"
+        Title="QuickerLite 设置"
+        Width="460"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        FontFamily="Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI"
+        Background="{StaticResource PanelBrush}"
+        UseLayoutRounding="True">
+
+    <StackPanel Margin="24,22,24,20">
+
+        <TextBlock Text="唤出快捷键"
+                   FontSize="{x:Static ui:Metrics.FontBody}"
+                   FontWeight="Medium"
+                   Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="点进下面的输入框，直接按下你想要的组合键。必须包含至少一个修饰键（Ctrl / Alt / Shift / Win）。"
+                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                   Foreground="{StaticResource TextTertiaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,5,0,8" />
+        <TextBox x:Name="HotkeyBox"
+                 FontSize="14"
+                 Padding="10,8,10,8"
+                 IsReadOnly="True"
+                 Cursor="Hand"
+                 Background="{StaticResource FillBrush}"
+                 BorderBrush="{StaticResource BorderStrongBrush}"
+                 BorderThickness="1"
+                 Foreground="{StaticResource TextPrimaryBrush}"
+                 PreviewKeyDown="OnHotkeyBoxPreviewKeyDown"
+                 GotKeyboardFocus="OnHotkeyBoxGotFocus" />
+        <TextBlock x:Name="HotkeyHint"
+                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                   Foreground="{StaticResource DangerBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,6,0,0"
+                   Visibility="Collapsed" />
+
+        <TextBlock Text="每行格子数"
+                   FontSize="{x:Static ui:Metrics.FontBody}"
+                   FontWeight="Medium"
+                   Foreground="{StaticResource TextPrimaryBrush}"
+                   Margin="0,22,0,0" />
+        <Grid Margin="0,7,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Slider x:Name="ColumnSlider"
+                    Grid.Column="0"
+                    Minimum="3"
+                    Maximum="10"
+                    TickFrequency="1"
+                    IsSnapToTickEnabled="True"
+                    VerticalAlignment="Center"
+                    ValueChanged="OnColumnSliderChanged" />
+            <TextBlock x:Name="ColumnValue"
+                       Grid.Column="1"
+                       FontSize="{x:Static ui:Metrics.FontBody}"
+                       Width="36"
+                       TextAlignment="Right"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+        </Grid>
+
+        <TextBlock Text="唤出方式"
+                   FontSize="{x:Static ui:Metrics.FontBody}"
+                   FontWeight="Medium"
+                   Foreground="{StaticResource TextPrimaryBrush}"
+                   Margin="0,24,0,0" />
+        <TextBlock Text="除了上面的组合键，还可以用下面两种一键唤出。它们需要安装全局输入钩子（SetWindowsHookEx），部分杀毒软件会提示，属于正常现象 —— 关掉这两项钩子就会被卸载。"
+                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                   Foreground="{StaticResource TextTertiaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,5,0,8" />
+
+        <CheckBox x:Name="CtrlTapCheck"
+                  Content="单击 Ctrl 唤出 / 隐藏（Quicker 的招牌操作）"
+                  FontSize="{x:Static ui:Metrics.FontBody}"
+                  Foreground="{StaticResource TextPrimaryBrush}" />
+        <CheckBox x:Name="MiddleClickCheck"
+                  Content="单击鼠标中键唤出 / 隐藏"
+                  FontSize="{x:Static ui:Metrics.FontBody}"
+                  Margin="0,10,0,0"
+                  Foreground="{StaticResource TextPrimaryBrush}" />
+
+        <Grid Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       Text="Ctrl 判定时间窗"
+                       FontSize="{x:Static ui:Metrics.FontLabel}"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+            <Slider x:Name="CtrlTimeoutSlider"
+                    Grid.Column="1"
+                    Margin="10,0,10,0"
+                    Minimum="150"
+                    Maximum="800"
+                    TickFrequency="50"
+                    IsSnapToTickEnabled="True"
+                    VerticalAlignment="Center"
+                    ValueChanged="OnCtrlTimeoutChanged" />
+            <TextBlock x:Name="CtrlTimeoutValue"
+                       Grid.Column="2"
+                       FontSize="{x:Static ui:Metrics.FontLabel}"
+                       Width="56"
+                       TextAlignment="Right"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource TextSecondaryBrush}" />
+        </Grid>
+        <TextBlock Text="按下 Ctrl 后在这个时间内松开才算「单击」。调大容易误触，调小容易按不出来。"
+                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                   Foreground="{StaticResource TextTertiaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,5,0,0" />
+
+        <CheckBox x:Name="StartupCheck"
+                  Content="开机自动启动"
+                  FontSize="{x:Static ui:Metrics.FontBody}"
+                  Margin="0,22,0,0"
+                  Foreground="{StaticResource TextPrimaryBrush}" />
+
+        <TextBlock x:Name="DataPathText"
+                   FontSize="{x:Static ui:Metrics.FontLabel}"
+                   Foreground="{StaticResource TextTertiaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,20,0,0" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
+            <Button x:Name="CancelButton"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Content="取消"
+                    MinWidth="86"
+                    Margin="0,0,8,0"
+                    Click="OnCancelClick" />
+            <Button x:Name="SaveButton"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="保存"
+                    MinWidth="86"
+                    IsDefault="True"
+                    Click="OnSaveClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

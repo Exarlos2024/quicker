@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuickerLite 界面设计方案 v1</title>
+<style>
+:root{
+  --bg:#FFFFFF; --s1:#F7F8FA; --s2:#F2F3F5; --s3:#E7EAEE; --hover:#F5F7FA;
+  --bd:#E3E7ED; --bd2:#D3D5DA;
+  --t1:#1F2329; --t2:#5A6472; --t3:#6B7280; --td:#C9CDD3;
+  --a50:#EFF4FE; --a100:#DCE7FD; --a500:#2F6FEB; --a700:#1F5FD8;
+  --r6:6px; --r8:8px; --r10:10px; --r14:14px; --r18:18px;
+  --sh:0 12px 32px rgba(15,23,42,.14), 0 2px 8px rgba(15,23,42,.08);
+  --font:system-ui,-apple-system,"Segoe UI","Microsoft YaHei UI","PingFang SC",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--s1); color:var(--t1);
+  font-family:var(--font); font-size:14px; line-height:1.75;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+.doc{max-width:1000px; margin:0 auto; padding:56px 32px 120px}
+
+.hero{padding-bottom:28px; border-bottom:1px solid var(--bd); margin-bottom:32px}
+.hero h1{font-size:26px; font-weight:500; margin:0 0 10px; letter-spacing:-.2px}
+.hero p{margin:0; color:var(--t2); font-size:14px; max-width:62ch}
+.meta{margin-top:16px; display:flex; flex-wrap:wrap; gap:8px}
+.meta span{
+  font-size:12px; color:var(--t2); background:var(--bg);
+  border:1px solid var(--bd); border-radius:999px; padding:3px 12px;
+}
+
+section{background:var(--bg); border:1px solid var(--bd); border-radius:var(--r14);
+  padding:32px 36px; margin-bottom:20px}
+section > h2{
+  font-size:17px; font-weight:500; margin:0 0 6px;
+  display:flex; align-items:baseline; gap:10px;
+}
+section > h2 .num{
+  font-size:12px; font-family:var(--mono); color:var(--a500);
+  background:var(--a50); border-radius:var(--r6); padding:2px 8px; font-weight:400;
+}
+section > .lead{margin:0 0 24px; color:var(--t2); font-size:13.5px; max-width:70ch}
+h3{font-size:14px; font-weight:500; margin:32px 0 12px}
+h3:first-of-type{margin-top:8px}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px; padding-left:22px}
+li{margin-bottom:7px}
+li::marker{color:var(--t3)}
+code{
+  font-family:var(--mono); font-size:12.5px; background:var(--s2);
+  border-radius:4px; padding:1.5px 5px; color:#33404F;
+}
+strong{font-weight:500}
+.muted{color:var(--t3); font-size:12.5px}
+
+table{width:100%; border-collapse:collapse; font-size:13px; margin:0 0 16px}
+th{
+  text-align:left; font-weight:500; font-size:12px; color:var(--t3);
+  padding:0 12px 8px 0; border-bottom:1px solid var(--bd); white-space:nowrap;
+}
+td{padding:12px 12px 12px 0; border-bottom:1px solid var(--bd); vertical-align:top}
+td:last-child,th:last-child{padding-right:0}
+tbody tr:last-child td{border-bottom:none}
+.ratio{font-family:var(--mono); font-size:12.5px; white-space:nowrap}
+.fail{color:#C0392B}
+.pass{color:#1E7A46}
+
+.swatches{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:8px}
+.sw{border:1px solid var(--bd); border-radius:var(--r10); overflow:hidden}
+.sw .chip{height:56px}
+.sw .info{padding:9px 11px; background:var(--bg)}
+.sw .nm{font-size:12.5px; font-weight:500; display:block}
+.sw .hx{font-family:var(--mono); font-size:11.5px; color:var(--t3); display:block; margin-top:2px}
+.sw .use{font-size:11.5px; color:var(--t3); display:block; margin-top:4px; line-height:1.5}
+
+.scale{display:flex; flex-direction:column; gap:0; border:1px solid var(--bd); border-radius:var(--r10); overflow:hidden}
+.scale .row{display:flex; align-items:center; gap:16px; padding:11px 16px; border-bottom:1px solid var(--bd)}
+.scale .row:last-child{border-bottom:none}
+.scale .tag{font-family:var(--mono); font-size:11.5px; color:var(--t3); width:74px; flex:none}
+.scale .demo{flex:1; min-width:0}
+.scale .note{font-size:12px; color:var(--t3); flex:none; width:190px; text-align:right}
+
+.tokrow{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px}
+.tok{background:var(--s1); border-radius:var(--r8); padding:10px 14px; min-width:104px}
+.tok .k{font-size:11.5px; color:var(--t3); display:block}
+.tok .v{font-family:var(--mono); font-size:13px; display:block; margin-top:2px}
+
+.stage{background:var(--s1); border-radius:var(--r14); padding:36px; display:flex;
+  justify-content:center; margin-bottom:12px; overflow-x:auto}
+
+.panel{
+  width:576px; background:var(--bg); border:1px solid var(--bd);
+  border-radius:var(--r14); box-shadow:var(--sh); overflow:hidden; flex:none;
+}
+.cmdbar{padding:12px 12px 4px}
+.cmdbox{
+  height:32px; background:var(--s2); border-radius:9px;
+  display:flex; align-items:center; gap:8px; padding:0 10px 0 12px;
+  transition:box-shadow .12s ease, background .12s ease;
+}
+.cmdbox:focus-within{background:var(--bg); box-shadow:0 0 0 1.5px var(--a500)}
+.cmdbox svg{flex:none}
+.cmdbox input{
+  flex:1; min-width:0; border:0; background:transparent; outline:0;
+  font-family:var(--font); font-size:13px; color:var(--t1); padding:0;
+}
+.cmdbox input::placeholder{color:var(--t3)}
+.kbd{
+  flex:none; font-family:var(--font); font-size:11px; color:var(--t2);
+  background:var(--s3); border-radius:var(--r6); padding:2px 8px;
+}
+
+.grid{
+  display:grid; grid-template-columns:repeat(6,92px); grid-auto-rows:100px;
+  padding:4px 12px 0;
+}
+.cell{padding:4px}
+.tile{
+  width:84px; height:92px; border-radius:var(--r10); border:1.5px solid transparent;
+  background:transparent; cursor:pointer; position:relative;
+  display:flex; flex-direction:column; align-items:center; padding-top:14px;
+  transition:background .1s ease, border-color .1s ease;
+  font-family:var(--font); text-align:center;
+}
+.tile:hover{background:var(--hover)}
+.tile:active{background:var(--s3)}
+.tile .ic{
+  width:44px; height:44px; border-radius:11px; background:var(--s2);
+  display:flex; align-items:center; justify-content:center; flex:none;
+  transition:background .1s ease;
+}
+.tile:hover .ic{background:#FFFFFF}
+.tile .nm{
+  font-size:12px; color:var(--t1); margin-top:8px; line-height:16px;
+  max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.tile .idx{
+  position:absolute; top:6px; left:6px; width:15px; height:15px;
+  border-radius:5px; background:var(--s3); color:var(--t2);
+  font-size:11px; line-height:15px; text-align:center; font-family:var(--font);
+}
+.tile.focus{background:var(--a50); border-color:var(--a500)}
+.tile.focus .ic{background:#FFFFFF}
+.tile.on{background:var(--a100); border-color:transparent}
+.tile.on .ic{background:#FFFFFF}
+.tile.on .idx{background:#FFFFFF; color:var(--a700)}
+.tile.on::after{
+  content:""; position:absolute; top:4px; right:4px; width:15px; height:15px;
+  border-radius:50%; background:var(--a500);
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size:15px 15px;
+}
+.tile.add{
+  border:1px dashed var(--bd2); background:transparent; justify-content:center;
+  padding-top:0; gap:6px; color:var(--t3);
+}
+.tile.add:hover{background:var(--s1); border-color:var(--t3); color:var(--t2)}
+.tile.add .plus{font-size:18px; line-height:1; color:inherit}
+.tile.add .nm{margin-top:0; color:inherit}
+
+.footer{
+  margin-top:4px; padding:9px 12px; border-top:1px solid var(--bd);
+  display:flex; align-items:center; gap:12px; min-height:44px;
+}
+.tabs{display:flex; gap:4px; flex:1; min-width:0}
+.tab{
+  border:0; background:transparent; font-family:var(--font); font-size:12px;
+  color:var(--t2); border-radius:999px; padding:4px 12px; cursor:pointer;
+  transition:background .1s ease, color .1s ease; white-space:nowrap;
+}
+.tab:hover{background:var(--s2)}
+.tab[aria-selected="true"]{background:var(--a100); color:var(--a700)}
+.foot-right{display:flex; align-items:center; gap:10px; flex:none}
+.selchip{
+  font-size:11.5px; color:var(--a700); background:var(--a100);
+  border-radius:999px; padding:4px 12px; white-space:nowrap;
+}
+.selchip[hidden]{display:none}
+.iconbtn{
+  border:0; background:transparent; padding:4px; border-radius:var(--r6);
+  cursor:pointer; display:flex; align-items:center; transition:background .1s ease;
+}
+.iconbtn:hover{background:var(--s2)}
+
+.statelist{display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:14px}
+.statecard{border:1px solid var(--bd); border-radius:var(--r10); padding:14px}
+.statecard .prev{
+  height:96px; border-radius:var(--r8); background:var(--s1);
+  display:flex; align-items:center; justify-content:center; margin-bottom:11px;
+}
+.statecard .nm{font-size:13px; font-weight:500; display:block; margin-bottom:3px}
+.statecard .spec{font-size:11.5px; color:var(--t3); font-family:var(--mono); line-height:1.65; display:block}
+
+.mini{width:76px; height:88px; border-radius:var(--r10); border:1.5px solid transparent;
+  display:flex; flex-direction:column; align-items:center; padding-top:12px; position:relative}
+.mini .ic{width:36px; height:36px; border-radius:9px; background:var(--s2);
+  display:flex; align-items:center; justify-content:center}
+.mini .nm{font-size:11px; color:var(--t1); margin-top:8px}
+.mini.on::after{
+  content:""; position:absolute; top:4px; right:4px; width:15px; height:15px; border-radius:50%;
+  background:var(--a500);
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.4 2.4 4.6-5' fill='none' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size:15px 15px;
+}
+
+.kbdtable{display:grid; grid-template-columns:auto 1fr; gap:8px 20px; align-items:baseline; font-size:13px}
+.kbdtable .k{display:flex; gap:5px; flex-wrap:wrap}
+.key{
+  font-family:var(--font); font-size:11.5px; color:var(--t1); background:var(--bg);
+  border:1px solid var(--bd2); border-bottom-width:2px; border-radius:5px;
+  padding:2px 7px; white-space:nowrap;
+}
+
+.callout{
+  background:var(--a50); border-radius:var(--r10); padding:14px 18px; margin:0 0 16px;
+  font-size:13px; color:#1B3A6B;
+}
+.callout b{font-weight:500}
+.warn{background:#FDF3E7; color:#7A4A10}
+.warn b{font-weight:500}
+
+footer.docfoot{
+  margin-top:36px; padding-top:20px; border-top:1px solid var(--bd);
+  color:var(--t3); font-size:12px; line-height:1.9;
+}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<header class="hero">
+  <h1>QuickerLite 界面设计方案</h1>
+  <p>针对现有 WPF 面板的一次完整视觉与交互重构。目标不是换一套皮肤，而是让「唤出 → 选择 → 执行」这条主路径在键盘上、在第一次使用时、在低质量屏幕上都能成立。</p>
+  <div class="meta">
+    <span>版本 v1</span>
+    <span>2026-09-13</span>
+    <span>浅色主题</span>
+    <span>对象：PanelWindow / SettingsWindow / ImportWindow</span>
+  </div>
+</header>
+
+<section id="goals">
+  <h2><span class="num">01</span>设计目标与五条原则</h2>
+  <p class="lead">这个界面不是「一个窗口」，是「一次键盘动作的延伸」。它的绝大多数出现只持续两秒，用户看完就忘。所有决策都从这一点出发。</p>
+
+  <h3>五条原则</h3>
+  <ol>
+    <li><strong>弹出即走。</strong>面板是瞬态浮层，不是文档窗口。它不该有标题栏、不该有「确定/取消」、不该要求用户先理解布局再动手。打开后最该被看到的，是「按哪里能跑起来」。</li>
+    <li><strong>键盘优先。</strong>任何一个用鼠标能完成的动作，都必须有一条键盘走法。这是启动器的存在意义——如果还要摸鼠标，用户不如直接去点任务栏。</li>
+    <li><strong>几何恒定。</strong>面板的尺寸和格子位置不能随内容多少而变化。肌肉记忆建立在「第 3 个格子永远在这个位置」上，位置一变，记忆就废了。</li>
+    <li><strong>状态可辨。</strong>任意两个状态之间的差异必须一眼可辨，不能只差一点亮度。「我到底选中了没有」这种犹豫本身就是缺陷。</li>
+    <li><strong>颜色让位。</strong>界面的颜色预算留给用户自己的图标。面板本体只使用一个中性色阶加一个强调色，把彩度全部让出去。</li>
+  </ol>
+
+  <h3>与现状的关系</h3>
+  <p>现有实现的功能骨架是完整的——热键、多页、搜索排序、拖拽、多选都在。这次重构<strong>不动任何数据结构和业务逻辑</strong>，只改视觉层与交互层：格子模板、腰栏、令牌、键盘处理。所有改动都可以分批上线，每批独立可用。</p>
+</section>
+
+<section id="audit">
+  <h2><span class="num">02</span>现状审计</h2>
+  <p class="lead">以下每一条都对着现有代码里的具体位置，不是主观印象。对比度数值按 WCAG 2.1 相对亮度公式实算。</p>
+
+  <table>
+    <thead>
+      <tr><th style="width:24%">问题</th><th style="width:30%">证据</th><th style="width:22%">影响</th><th style="width:24%">新方案</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>面板没有层级感，不像浮层</td>
+        <td><code>AllowsTransparency="False"</code> 导致无法绘制外阴影；圆角只靠 <code>DWMWCP_ROUND</code>，代码注释自己写着「Win10 不支持，面板保持直角」</td>
+        <td>浮层和背后窗口糊在一起，用户感觉不到这是「临时弹出、看完就走」的东西</td>
+        <td>改用 DWM 扩展边框方案拿系统投影（不牺牲硬件加速），Win11 叠加圆角；Win10 退化为 1px 描边 + 更大留白</td>
+      </tr>
+      <tr>
+        <td>辅助文字对比度不达标</td>
+        <td>搜索占位符 <code>#FFA8B0BB</code> ≈ <span class="ratio fail">2.19:1</span>；腰栏状态文字 <code>#FF8C95A1</code> ≈ <span class="ratio fail">3.03:1</span></td>
+        <td>均低于 WCAG AA 对正文要求的 4.5:1。弱光环境、低质量屏幕、视力不佳的用户读不清</td>
+        <td>统一提升到 <code>#6B7280</code>，实测 <span class="ratio pass">4.83:1</span></td>
+      </tr>
+      <tr>
+        <td>悬停反馈太弱</td>
+        <td>hover 背景 <code>#FFEEF3FC</code> 相对白底亮度差约 1.05:1</td>
+        <td>鼠标扫过几乎无感知，用户不确定指针是否落在格子上</td>
+        <td>双层反馈：格子底色 <code>#F5F7FA</code> + 图标容器由灰转白，形成可见的「浮起」</td>
+      </tr>
+      <tr>
+        <td>三种状态互相打架</td>
+        <td>hover <code>#FFEEF3FC</code>、多选 <code>#262F6FEB</code>（15% 蓝）、拖拽指示条 <code>#FF2F6FEB</code> 属同一族浅蓝</td>
+        <td>分不清「只是鼠标扫过」「已经选中」「正在拖拽」</td>
+        <td>三套独立语言：中性灰=悬停，实心淡蓝+勾=选中，蓝色描边环=键盘焦点</td>
+      </tr>
+      <tr>
+        <td>键盘只能运行第一项</td>
+        <td><code>case Key.Enter: LaunchItem(_view.FirstOrDefault())</code>，且无任何方向键分支</td>
+        <td>键盘用户无法选中第 N 个格子，等于必须用鼠标。这与启动器的定位直接冲突</td>
+        <td>方向键网格导航 + <code>Ctrl+1</code>…<code>Ctrl+9</code> 数字直选</td>
+      </tr>
+      <tr>
+        <td>页签是 8px 圆点</td>
+        <td><code>PageDots</code> 里生成的指示点 <code>Width=8, Height=8</code>；<code>PageNameButton</code> 只显示当前页名</td>
+        <td>不知道总共有几页、每页叫什么，跨页只能靠翻</td>
+        <td>文字页签常驻，当前页实心高亮，可直接点选</td>
+      </tr>
+      <tr>
+        <td>格子缺少承载容器</td>
+        <td>40px 的 <code>Image</code> 直接放在透明 <code>Button</code> 上，无任何背景</td>
+        <td>透明底 PNG 在白底上看不清；十几个格子排开是一片没有节奏的图标墙</td>
+        <td>每个图标加 44px 圆角容器 <code>#F2F3F5</code>，网格获得韵律</td>
+      </tr>
+      <tr>
+        <td>添加入口不可见</td>
+        <td>只有 <code>EmptyHint</code> 在面板全空时提示「拖进来即可添加」；一旦有内容，入口就消失了</td>
+        <td>用过一段时间后用户想不起来还能怎么加东西</td>
+        <td>末行常驻虚线「＋ 添加」格</td>
+      </tr>
+      <tr>
+        <td>面板高度随内容跳动</td>
+        <td><code>SizeToContent="Height"</code> + 内容 <code>MaxHeight=430</code>；<code>PositionAtCursor</code> 里靠近屏幕底部时会整体翻到光标上方</td>
+        <td>同一个面板，8 个条目和 16 个条目的高度不同，靠近屏幕底部时还会上下翻转，格子位置完全变了——肌肉记忆失效</td>
+        <td>固定为 3 行高度，不随内容变化</td>
+      </tr>
+      <tr>
+        <td>没有字阶</td>
+        <td>实际用到 11 / 11.5 / 12 / 13 / 15 五档字号，无规则可循</td>
+        <td>视觉杂乱，信息层级不清晰</td>
+        <td>收敛为 11 / 12 / 13 / 15 / 17 五档，每档规定用途</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="tokens">
+  <h2><span class="num">03</span>设计令牌</h2>
+  <p class="lead">全部令牌落到一个资源字典里，三个窗口共用。这是唯一允许出现硬编码色值的地方，其它 XAML 一律引用令牌。</p>
+
+  <h3>中性色阶</h3>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid var(--bd)"></div><div class="info"><span class="nm">面板底</span><span class="hx">#FFFFFF</span><span class="use">浮层主体</span></div></div>
+    <div class="sw"><div class="chip" style="background:#F7F8FA"></div><div class="info"><span class="nm">页面底</span><span class="hx">#F7F8FA</span><span class="use">设置页 / 分组背景</span></div></div>
+    <div class="sw"><div class="chip" style="background:#F2F3F5"></div><div class="info"><span class="nm">填充</span><span class="hx">#F2F3F5</span><span class="use">图标容器、输入框、键位片</span></div></div>
+    <div class="sw"><div class="chip" style="background:#E7EAEE"></div><div class="info"><span class="nm">按压</span><span class="hx">#E7EAEE</span><span class="use">按下态、次级键位片</span></div></div>
+    <div class="sw"><div class="chip" style="background:#F5F7FA"></div><div class="info"><span class="nm">悬停</span><span class="hx">#F5F7FA</span><span class="use">格子 / 列表行悬停</span></div></div>
+    <div class="sw"><div class="chip" style="background:#E3E7ED"></div><div class="info"><span class="nm">描边</span><span class="hx">#E3E7ED</span><span class="use">面板外框、分隔线</span></div></div>
+    <div class="sw"><div class="chip" style="background:#D3D5DA"></div><div class="info"><span class="nm">描边·强</span><span class="hx">#D3D5DA</span><span class="use">虚线框、键位片边框</span></div></div>
+    <div class="sw"><div class="chip" style="background:#1F2329"></div><div class="info"><span class="nm">文字·主</span><span class="hx">#1F2329</span><span class="use">15.8:1</span></div></div>
+    <div class="sw"><div class="chip" style="background:#5A6472"></div><div class="info"><span class="nm">文字·次</span><span class="hx">#5A6472</span><span class="use">6.00:1</span></div></div>
+    <div class="sw"><div class="chip" style="background:#6B7280"></div><div class="info"><span class="nm">文字·辅</span><span class="hx">#6B7280</span><span class="use">4.83:1 达标下限</span></div></div>
+    <div class="sw"><div class="chip" style="background:#C9CDD3"></div><div class="info"><span class="nm">文字·禁用</span><span class="hx">#C9CDD3</span><span class="use">仅用于不可用态</span></div></div>
+  </div>
+
+  <h3>强调色</h3>
+  <p>沿用现有品牌蓝 <code>#2F6FEB</code>，补全色阶。它的白底对比度是 <span class="ratio pass">4.57:1</span>，恰好通过 AA，因此既能做填充也能直接做正文色。</p>
+  <div class="swatches">
+    <div class="sw"><div class="chip" style="background:#EFF4FE"></div><div class="info"><span class="nm">强调·50</span><span class="hx">#EFF4FE</span><span class="use">键盘焦点底</span></div></div>
+    <div class="sw"><div class="chip" style="background:#DCE7FD"></div><div class="info"><span class="nm">强调·100</span><span class="hx">#DCE7FD</span><span class="use">选中底、当前页签</span></div></div>
+    <div class="sw"><div class="chip" style="background:#2F6FEB"></div><div class="info"><span class="nm">强调·500</span><span class="hx">#2F6FEB</span><span class="use">描边环、勾选角标</span></div></div>
+    <div class="sw"><div class="chip" style="background:#1F5FD8"></div><div class="info"><span class="nm">强调·700</span><span class="hx">#1F5FD8</span><span class="use">淡蓝底上的文字</span></div></div>
+  </div>
+
+  <h3>字阶</h3>
+  <div class="scale">
+    <div class="row"><span class="tag">17 / 500</span><span class="demo" style="font-size:17px;font-weight:500">面板标题、区块标题</span><span class="note">一屏最多一处</span></div>
+    <div class="row"><span class="tag">15 / 500</span><span class="demo" style="font-size:15px;font-weight:500">空状态主文案</span><span class="note">强调性提示</span></div>
+    <div class="row"><span class="tag">13 / 400</span><span class="demo" style="font-size:13px">搜索输入、设置项正文</span><span class="note">正文基准</span></div>
+    <div class="row"><span class="tag">12 / 400</span><span class="demo" style="font-size:12px">格子名称、页签、按钮</span><span class="note">面板内最主要的字号</span></div>
+    <div class="row"><span class="tag">11 / 400</span><span class="demo" style="font-size:11px">数字角标、键位片、辅助说明</span><span class="note">下限，不再往下走</span></div>
+  </div>
+  <p class="muted" style="margin-top:10px">字重只用 400 和 500 两档。Windows 上中文字体的 600/700 会触发伪粗体，边缘发虚，一律不用。</p>
+
+  <h3>间距 · 圆角 · 层级 · 动效</h3>
+  <div class="tokrow">
+    <div class="tok"><span class="k">间距基数</span><span class="v">4px</span></div>
+    <div class="tok"><span class="k">间距序列</span><span class="v">4 8 12 16 20 24</span></div>
+    <div class="tok"><span class="k">圆角·控件</span><span class="v">6px</span></div>
+    <div class="tok"><span class="k">圆角·格子</span><span class="v">10px</span></div>
+    <div class="tok"><span class="k">圆角·面板</span><span class="v">14px</span></div>
+    <div class="tok"><span class="k">悬停过渡</span><span class="v">100ms</span></div>
+    <div class="tok"><span class="k">选中过渡</span><span class="v">120ms</span></div>
+    <div class="tok"><span class="k">翻页过渡</span><span class="v">160ms</span></div>
+  </div>
+  <p>缓动统一用 <code>cubic-bezier(0.2, 0, 0, 1)</code>（快出慢入），WPF 里对应 <code>CubicEase{EasingMode=EaseOut}</code> 配 <code>Exponent</code> 微调。所有动效都必须在系统开启「减少动画」时降级为无过渡——不要用动效表达状态变化，用颜色和形状。</p>
+
+  <h3>层级（阴影）</h3>
+  <div class="tokrow">
+    <div class="tok"><span class="k">面板</span><span class="v">0 12 32 / 14%</span></div>
+    <div class="tok"><span class="k">浮出菜单</span><span class="v">0 6 20 / 12%</span></div>
+    <div class="tok"><span class="k">无阴影</span><span class="v">格子 / 页签</span></div>
+  </div>
+  <p class="muted">只有两类元素允许有阴影：面板本身，和从面板里浮出来的菜单。格子的悬停与选中一律用底色表达，不加阴影——阴影用在平面元素上会让网格变得脏。</p>
+</section>
+
+<section id="layout">
+  <h2><span class="num">04</span>布局与尺寸规格</h2>
+  <p class="lead">所有尺寸都从 4px 基数推导。默认 6 列 3 行，面板总尺寸 576 × 396，与内容多少无关。</p>
+
+  <table>
+    <thead><tr><th style="width:34%">元素</th><th style="width:22%">尺寸</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>面板</td><td><code>576 × 396</code></td><td>6 列 × 92 + 左右各 12 内边距；高度固定，不随内容变化</td></tr>
+      <tr><td>顶部命令栏</td><td><code>高 48</code></td><td>内边距 12 / 12 / 4</td></tr>
+      <tr><td>搜索输入框</td><td><code>552 × 32</code></td><td>圆角 9，实心填充 <code>#F2F3F5</code>，聚焦时转白并加 1.5px 强调色环</td></tr>
+      <tr><td>格子槽位</td><td><code>92 × 100</code></td><td>6 列共 552，正好铺满内容区</td></tr>
+      <tr><td>格子本体</td><td><code>84 × 92</code></td><td>槽位内缩 4；圆角 10</td></tr>
+      <tr><td>图标容器</td><td><code>44 × 44</code></td><td>圆角 11；图标实际绘制区 32 × 32，留 6 内边距</td></tr>
+      <tr><td>数字角标</td><td><code>15 × 15</code></td><td>格子左上角内缩 6；圆角 5；仅前 9 格显示</td></tr>
+      <tr><td>勾选角标</td><td><code>直径 15</code></td><td>格子右上角内缩 4；仅多选态显示</td></tr>
+      <tr><td>格子名称</td><td><code>12px / 单行</code></td><td>最大宽 76，超出省略号。不换行——两行会让网格高度不可控</td></tr>
+      <tr><td>腰栏</td><td><code>高 44</code></td><td>上边框 1px；内边距 9 / 12</td></tr>
+      <tr><td>页签</td><td><code>高 26</code></td><td>圆角 999（胶囊）；左右内边距 12</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <b>为什么名称强制单行。</b>现在格子名称允许折两行、最大高 34px。一旦名字折行，格子内容高度就从 16 变成 32，而 <code>WrapPanel</code> 的行高由最高元素决定——同一行里只要有一个长名字，整行格子都会往下挤，网格的纵向节奏就断了。截断加悬停提示是更好的取舍。
+  </div>
+</section>
+
+<section id="mockup">
+  <h2><span class="num">05</span>高保真稿（可交互）</h2>
+  <p class="lead">下面是按上述规格用真实 CSS 还原的面板。把鼠标移到格子上看悬停，点一下格子看多选，点页签切换——所有状态都是活的，可以直接当作验收基准。</p>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="cmdbar">
+        <div class="cmdbox">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <circle cx="6" cy="6" r="4.6" fill="none" stroke="#5A6472" stroke-width="1.3"/>
+            <path d="M9.4 9.4L12.4 12.4" stroke="#5A6472" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <input id="q" type="text" placeholder="搜索或输入动作名" aria-label="搜索动作">
+          <span class="kbd">Enter</span>
+        </div>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="footer">
+        <div class="tabs" id="tabs"></div>
+        <div class="foot-right">
+          <span class="selchip" id="selchip" hidden>已选 0 项</span>
+          <button class="iconbtn" title="钉住面板" aria-label="钉住面板">
+            <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true">
+              <rect x="4" y="2" width="7" height="6" rx="1.6" fill="#5A6472"/>
+              <path d="M7.5 8.5V13" stroke="#5A6472" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="iconbtn" title="设置" aria-label="设置">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+              <circle cx="8" cy="8" r="5.4" fill="none" stroke="#5A6472" stroke-width="1.4"/>
+              <circle cx="8" cy="8" r="1.9" fill="#5A6472"/>
+              <path d="M8 1.4v1.7M8 12.9v1.7M1.4 8h1.7M12.9 8h1.7" stroke="#5A6472" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="muted">原型说明：格子的圆角、间距、色值、字号与规格表逐项对应；真实实现里图标来自系统提取，此处用统一的中性几何图形代替。</p>
+</section>
+
+<section id="states">
+  <h2><span class="num">06</span>组件状态矩阵</h2>
+  <p class="lead">格子是全界面状态最多的组件，七种状态必须互不混淆。开发时照这张表逐条实现。</p>
+
+  <div class="statelist">
+    <div class="statecard">
+      <div class="prev"><div class="mini"><div class="ic"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">默认</span><span class="spec">底 透明<br>图标容器 #F2F3F5</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini" style="background:#F5F7FA"><div class="ic" style="background:#FFF"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">悬停</span><span class="spec">底 #F5F7FA<br>图标容器 转白</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini" style="background:#E7EAEE"><div class="ic" style="background:#FFF"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">按下</span><span class="spec">底 #E7EAEE<br>100ms 内完成</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini" style="background:#EFF4FE;border-color:#2F6FEB"><div class="ic" style="background:#FFF"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">键盘焦点</span><span class="spec">底 #EFF4FE<br>描边 1.5px #2F6FEB</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini on" style="background:#DCE7FD"><div class="ic" style="background:#FFF"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">多选选中</span><span class="spec">底 #DCE7FD<br>勾选角标 #2F6FEB</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini" style="background:#F5F7FA;opacity:.45"><div class="ic" style="background:#FFF"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#5A6472"/></svg></div><span class="nm">微信</span></div></div>
+      <span class="nm">拖拽中</span><span class="spec">整体不透明度 45%<br>落点由指示条表达</span>
+    </div>
+    <div class="statecard">
+      <div class="prev"><div class="mini"><div class="ic" style="background:#ECEEF1"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="3" fill="#C9CDD3"/></svg></div><span class="nm" style="color:#C9CDD3">微信</span></div></div>
+      <span class="nm">禁用</span><span class="spec">文字 #C9CDD3<br>图标容器 #ECEEF1</span>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <b>焦点态为什么不用系统焦点。</b>格子按钮现在是 <code>Focusable="False"</code>，这是对的——真正的键盘焦点必须留在搜索框里，否则用户打字会断。所以焦点态要在视图模型上再开一个字段（和现有的 <code>IsSelected</code> 同一套做法），由窗口维护一个 <code>_focusIndex</code>，而不是去抢 WPF 的键盘焦点。这样「打字过滤」和「方向键选格子」才能共存。
+  </div>
+
+  <h3>其它组件状态</h3>
+  <table>
+    <thead><tr><th style="width:22%">组件</th><th style="width:39%">状态</th><th>规格</th></tr></thead>
+    <tbody>
+      <tr><td>搜索框</td><td>默认 / 聚焦 / 有内容</td><td>默认底 <code>#F2F3F5</code>；聚焦转白 + 1.5px <code>#2F6FEB</code> 环；有内容时右侧出现清除按钮（<code>Enter</code> 提示让位给清除）</td></tr>
+      <tr><td>页签</td><td>默认 / 悬停 / 当前</td><td>默认透明底 <code>#5A6472</code>；悬停 <code>#F2F3F5</code>；当前 <code>#DCE7FD</code> 底 + <code>#1F5FD8</code> 字</td></tr>
+      <tr><td>「已选 N 项」</td><td>隐藏 / 显示</td><td>仅在选择数 ≥ 1 时出现，胶囊形，避免腰栏在空选择时被占用</td></tr>
+      <tr><td>添加格</td><td>默认 / 悬停</td><td>虚线 1px <code>#D3D5DA</code>；悬停时虚线转 <code>#6B7280</code> 且底色 <code>#F7F8FA</code></td></tr>
+      <tr><td>拖拽指示条</td><td>显示 / 隐藏</td><td>宽 3，圆角 1.5，<code>#2F6FEB</code>，高度随目标行收缩 8px</td></tr>
+      <tr><td>右键菜单</td><td>单项 / 批量</td><td>圆角 8，阴影「浮出菜单」档，内边距 4，菜单项高 28，悬停底 <code>#F2F3F5</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="interaction">
+  <h2><span class="num">07</span>键盘与鼠标交互规格</h2>
+  <p class="lead">键盘路径是这次重构的核心增量。原则是：任何动作都不强制用户离开键盘。</p>
+
+  <h3>全局键位</h3>
+  <div class="kbdtable">
+    <div class="k"><span class="key">Ctrl</span><span class="key">Alt</span><span class="key">Q</span></div><div>唤出 / 收起面板（现有热键，保留）</div>
+
+    <div class="k"><span class="key">Enter</span></div><div>运行<strong>键盘焦点所在</strong>的格子；若尚未移动过焦点，则运行第一项。这是对现有行为的兼容升级</div>
+
+    <div class="k"><span class="key">←</span><span class="key">→</span><span class="key">↑</span><span class="key">↓</span></div><div>在网格里按行列移动键盘焦点。<strong>新增</strong>。到达行首 / 行尾时是否换行，采用「换行」——网格里换行比截断更符合预期</div>
+
+    <div class="k"><span class="key">Ctrl</span><span class="key">1</span> … <span class="key">Ctrl</span><span class="key">9</span></div><div>直接运行第 N 个格子。<strong>新增</strong>，也是数字角标存在的理由</div>
+
+    <div class="k"><span class="key">Tab</span></div><div>在「搜索框 → 网格 → 页签 → 腰栏按钮」之间循环。搜索框为空时焦点默认在搜索框</div>
+
+    <div class="k"><span class="key">PgUp</span><span class="key">PgDn</span></div><div>上 / 下一页。<strong>新增</strong>，与滚轮翻页等价</div>
+
+    <div class="k"><span class="key">Esc</span></div><div>有选择先取消选择；有键盘焦点先收起焦点；都没有才隐藏面板（现有分层逻辑，保留）</div>
+
+    <div class="k"><span class="key">Ctrl</span><span class="key">A</span></div><div>全选当前页（现有，保留）。仅在搜索框为空时生效</div>
+
+    <div class="k"><span class="key">Delete</span></div><div>移除选中项（现有，保留）。仅在有选中时生效</div>
+
+    <div class="k"><span class="key">Ctrl</span><span class="key">F</span></div><div>焦点跳回搜索框并全选已有文字。<strong>新增</strong>，从网格里快速回到输入</div>
+  </div>
+
+  <h3>鼠标行为</h3>
+  <table>
+    <thead><tr><th style="width:30%">动作</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>单击格子</td><td>运行该格子（有选择时先清空选择）</td></tr>
+      <tr><td><code>Ctrl</code> + 单击</td><td>切换该格子的选中状态</td></tr>
+      <tr><td><code>Shift</code> + 单击</td><td>从锚点连选到该格子</td></tr>
+      <tr><td>单击空白处</td><td>清空选择；再次单击空白处收起面板</td></tr>
+      <tr><td>按住格子拖动</td><td>调序；拖到腰栏页签上则跨页搬移</td></tr>
+      <tr><td>滚轮</td><td>内容超出时滚动内容，未超出时翻页（现有行为，保留）</td></tr>
+      <tr><td>右键格子</td><td>单项菜单；若右键的是选区成员则弹批量菜单</td></tr>
+    </tbody>
+  </table>
+
+  <h3>空状态与无结果</h3>
+  <p>两者是不同场景，不能共用一套文案：</p>
+  <ul>
+    <li><strong>面板全空</strong>：一个简笔插图 + 主文案「面板还是空的」+ 两个并排按钮「扫描开始菜单」「从文件添加」。现在只有一行灰字，用户看完仍然不知道怎么开始。</li>
+    <li><strong>搜索无结果</strong>：保留现有的「没有匹配「xxx」的条目」，下面补一个可点动作「添加「xxx」到面板」——搜索失败的时刻，恰好是用户最想添加东西的时刻。这个入口现在完全没有。</li>
+  </ul>
+</section>
+
+<section id="a11y">
+  <h2><span class="num">08</span>无障碍与兼容</h2>
+  <ul>
+    <li><strong>对比度。</strong>所有正文文字 ≥ 4.5:1，大字与图形 ≥ 3:1。禁用态不参与达标要求，但必须仍可辨认轮廓。审计出的两处不达标色值已全部替换。</li>
+    <li><strong>点击目标。</strong>格子 84 × 92、页签高 26、图标按钮 23 × 23。除图标按钮外全部超过 32 × 32 的建议下限；图标按钮靠加大内边距到 23px 并保持 10px 间隔来补偿。</li>
+    <li><strong>不依赖颜色单独传达信息。</strong>选中除了底色变化，还有勾选角标；焦点除了底色，还有描边环。色觉障碍用户同样能区分。</li>
+    <li><strong>减少动画。</strong>检测 <code>SystemParameters.ClientAreaAnimation</code>，为 <code>false</code> 时全部过渡时长置 0。</li>
+    <li><strong>高对比度模式。</strong>检测 <code>SystemParameters.HighContrast</code>，为 <code>true</code> 时改用系统 <code>SystemColors</code>，放弃自定义令牌——这是 Windows 平台的通行做法，不要试图用自定义色值硬扛。</li>
+    <li><strong>DPI。</strong>沿用现有的物理像素定位方案（<code>PositionAtCursor</code>）。新增的固定尺寸需要按 <code>dpiX / 96</code> 换算，否则 150% 缩放下面板会超出预期宽度。</li>
+  </ul>
+</section>
+
+<section id="wpf">
+  <h2><span class="num">09</span>WPF 落地映射</h2>
+  <p class="lead">这一节是给实现看的。所有改动都限于视图层，不动 <code>ConfigStore</code>、<code>PageResolver</code>、<code>SearchRanker</code> 等业务代码。</p>
+
+  <h3>令牌资源字典</h3>
+  <p>新建 <code>Themes/Tokens.xaml</code>，在 <code>App.xaml</code> 里合并。当前三个窗口各自硬编码色值，合并后统一引用。现有的 <code>PanelWindow.Resources</code> 里那几个 <code>Style</code> 也一并搬过去，让设置窗和导入窗复用同一套控件外观。</p>
+  <p>建议的资源粒度：</p>
+  <ul>
+    <li><code>Color</code> 与配套的 <code>SolidColorBrush</code> 各一份（Brush 全部 <code>x:Shared="True"</code> 或代码里 <code>Freeze()</code>，避免每次 hover 分配对象）</li>
+    <li><code>Thickness</code>：间距序列、面板内边距</li>
+    <li><code>Double</code>：圆角、尺寸、过渡时长</li>
+    <li><code>Style</code>：<code>ActionTileStyle</code> / <code>FlatButtonStyle</code> / <code>PageTabStyle</code> / <code>IconButtonStyle</code></li>
+  </ul>
+
+  <h3>窗口合成与阴影</h3>
+  <div class="callout warn">
+    <b>不要为了阴影直接打开 <code>AllowsTransparency="True"</code>。</b>在 WPF 里这个属性会让整个窗口退回软件渲染，面板的绘制开销明显上升，而这个面板是常驻热键唤出的高频窗口。推荐做法是保持 <code>AllowsTransparency="False"</code>，通过 DWM 拿系统投影：把 <code>DwmExtendFrameIntoClientArea</code> 的边距设为 1px，DWM 就会为无边框窗口绘制标准投影；圆角继续用现有的 <code>DWMWA_WINDOW_CORNER_PREFERENCE</code>，Win10 上自然退化为直角加 1px 描边。这样既有投影，又保留硬件加速。
+  </div>
+
+  <h3>格子模板改造</h3>
+  <p>现有模板已经是「<code>Grid</code> 包住 <code>Button</code> + 一层选中高亮 <code>Border</code>」的结构，这个结构是对的，扩展即可：</p>
+  <ul>
+    <li>加一层 <code>Border</code> 作为图标容器（44 × 44，圆角 11，底 <code>#F2F3F5</code>），图标放进去，绘制区 32 × 32</li>
+    <li>加一个 <code>TextBlock</code> 做数字角标，绑视图模型上的新属性 <code>IndexText</code>（前 9 项返回 "1"…"9"，其余返回空字符串）</li>
+    <li>再加一层 <code>Border</code> 做键盘焦点环，<code>IsHitTestVisible="False"</code>，绑 <code>FocusRingVisibility</code>——和现有 <code>SelectionVisibility</code> 完全同构</li>
+    <li>名称 <code>TextBlock</code> 去掉 <code>TextWrapping</code>，改为 <code>TextTrimming="CharacterEllipsis"</code> + 单行</li>
+    <li><code>ItemWidth/ItemHeight</code> 从 <code>92/96</code> 改为 <code>92/100</code></li>
+  </ul>
+
+  <h3>腰栏页签</h3>
+  <p>好消息是这部分代码已经存在：跨页拖拽时生成的 <code>PageDropChips</code> 就是文字胶囊页签。把 <code>RenderPageChips</code> 的渲染逻辑抽成一个共用方法，腰栏平时渲染页签、拖拽时渲染放置区，两者共用同一套 <code>Border</code> + <code>TextBlock</code> 构造代码。现有的 <code>PageDots</code> 与 <code>PageNameButton</code> 可以整体删除。</p>
+
+  <h3>固定尺寸</h3>
+  <p><code>ApplyColumns</code> 里把 <code>SizeToContent</code> 从 <code>Height</code> 改为 <code>Manual</code>，高度按 <code>3 × 100 + 48 + 44 + 4</code> 算成常量。行数可以做成设置项，但同一台机器上必须固定。</p>
+
+  <h3>键盘焦点</h3>
+  <p>新增 <code>_focusIndex</code> 与视图模型上的 <code>IsFocusCursor</code>，由 <code>OnWindowPreviewKeyDown</code> 处理方向键。注意两个坑：一是在搜索框有内容时，左右方向键应该留给文本编辑（用 <code>SearchBox.IsKeyboardFocusWithin</code> 判断）；二是焦点移动后要 <code>ScrollIntoView</code>，否则移到可视区外就没有反馈。</p>
+</section>
+
+<section id="plan">
+  <h2><span class="num">10</span>分阶段实施</h2>
+  <p class="lead">四批，每批独立可发布、可回滚。前两批只改视觉，风险最低；键盘交互单独一批，因为它要动 <code>PreviewKeyDown</code> 的分支逻辑，回归面最大。</p>
+
+  <table>
+    <thead><tr><th style="width:8%">批次</th><th style="width:30%">内容</th><th style="width:32%">涉及文件</th><th>验证方式</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>P0</strong></td>
+        <td>令牌字典 + 全部色值替换 + 对比度修复 + 悬停双层反馈</td>
+        <td><code>Themes/Tokens.xaml</code>（新增）、<code>App.xaml</code>、<code>PanelWindow.xaml</code></td>
+        <td>肉眼比对 + 色值对比度复算；截图与旧版并排</td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>图标容器 + 数字角标 + 页签栏 + 添加格 + 名称单行截断</td>
+        <td><code>PanelWindow.xaml</code>、<code>PanelWindow.xaml.cs</code>、<code>ItemViewModel.cs</code></td>
+        <td>启动日志 + 手动核对 7 种状态；现有 44 条 <code>TileReorder</code> 断言须全绿</td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td>方向键导航 + <code>Ctrl+1..9</code> + <code>Ctrl+F</code> + <code>PgUp/PgDn</code> + 固定尺寸</td>
+        <td><code>PanelWindow.xaml.cs</code>、<code>ItemViewModel.cs</code></td>
+        <td>新增键盘路径的断言；重点回归「搜索框有内容时方向键不抢」</td>
+      </tr>
+      <tr>
+        <td><strong>P3</strong></td>
+        <td>DWM 阴影与圆角、空状态插图、无结果添加入口、右键菜单样式、动效与减少动画降级</td>
+        <td><code>PanelWindow.xaml</code>、<code>NativeMethods.cs</code>、<code>App.xaml</code></td>
+        <td>Win10 / Win11 双环境各跑一次；高对比度模式检查</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>实施结果（四批已全部落地）</h3>
+  <p>P0–P3 已按上表顺序实现完毕，代码在当前工作区。与计划的偏差只有一处：<strong>令牌的唯一来源放在 C# 而不是 XAML</strong>——<code>UI/DesignTokens.cs</code> 定义 <code>Palette</code> 与 <code>Metrics</code> 两个静态类，<code>Themes/Tokens.xaml</code> 里的样式再通过 <code>{x:Static ui:Palette.Xxx}</code> 引用。这样颜色和尺寸只有一份定义，XAML 与 C# 不会各写一遍然后悄悄漂移；代价是 XAML 里要引入 <code>xmlns:ui</code>。</p>
+
+  <table>
+    <thead><tr><th style="width:8%">批次</th><th style="width:46%">实际落地</th><th>验证证据</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>P0</strong></td>
+        <td>26 个资源键全部经 <code>StaticResource</code> 引用；占位符 <code>#A8B0BB</code>（2.19:1）→ <code>#6B7280</code>（4.83:1）、腰栏状态 <code>#8C95A1</code>（3.03:1）→ <code>#5A6472</code>（6.00:1）；悬停改为「格子底 <code>#F5F7FA</code> + 图标容器转白」双层反馈</td>
+        <td>脚本比对「已定义键集合 ⊇ 已引用键集合」，缺失为空</td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>44px 圆角图标容器、前 9 格数字角标、文字胶囊页签（替换 8px 圆点）、常驻虚线「＋ 添加」格、名称单行截断</td>
+        <td>44 条 <code>TileReorder</code> 断言全绿（拖拽落点依赖真实容器边界，是本次回归重点）</td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td><code>_focusIndex</code> + <code>IsFocusCursor</code>；方向键网格导航、<code>Ctrl+1..9</code>、<code>Ctrl+F</code> 回搜索框、<code>PgUp/PgDn</code> 翻页；<code>Enter</code> 改为运行焦点格；高度固定 3 行，去掉 <code>SizeToContent=Height</code></td>
+        <td>启动日志新增几何自检：<code>期望 578×392，实际 578×392</code>——推导的 <code>HeaderHeight</code>/<code>FooterHeight</code> 常量得到实证</td>
+      </tr>
+      <tr>
+        <td><strong>P3</strong></td>
+        <td><code>DwmExtendFrameIntoClientArea</code> 四边各扩 1px 交 DWM 画投影（保持 <code>AllowsTransparency=False</code> 以保留硬件加速）；空状态插图 + 动作按钮；无结果时补「添加「xxx」到面板」；动效接入 <code>ClientAreaAnimation</code> / <code>HighContrast</code> 降级</td>
+        <td>构造三个窗口各跑一次确认 XAML 解析无异常；设置 / 导入 / 输入对话框同步换成令牌</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>明确的取舍</h3>
+  <ul>
+    <li><strong>不做深色主题。</strong>Windows 的深色模式需要整套色阶重算与对比度复验，工作量约等于再做一遍。等浅色版稳定后单独立项。</li>
+    <li><strong>不做自定义换肤。</strong>面板的颜色预算已经让给用户图标了，再加主题变量只会让「图标与背景打架」的概率变高。</li>
+    <li><strong>不做圆角自绘。</strong>继续依赖 DWM，Win10 上就是直角。为一个已经停止支持的系统写自绘窗口区域，性价比不成立。</li>
+    <li><strong>不改 <code>WrapPanel</code>。</strong>换成 <code>UniformGrid</code> 或自绘面板能省一点测量开销，但会破坏现有的拖拽落点计算（<code>TileReorder</code> 依赖真实的容器边界）。性能不是当前的瓶颈。</li>
+  </ul>
+</section>
+
+<footer class="docfoot">
+  QuickerLite 界面设计方案 v1 · 2026-09-13<br>
+  文档路径：<code>D:\projects\quicker\docs\ui-design-spec.html</code><br>
+  对应实现：<code>D:\projects\quicker\src\QuickerLite\UI\</code>
+</footer>
+
+</div>
+
+<script>
+const ICON = {
+  chat:   '<circle cx="7.5" cy="7" r="4.6" fill="#5A6472"/><circle cx="11" cy="10.4" r="3.1" fill="#8A929E"/>',
+  globe:  '<circle cx="9" cy="9" r="6.4" fill="none" stroke="#5A6472" stroke-width="1.4"/><path d="M2.6 9h12.8" stroke="#5A6472" stroke-width="1.4"/>',
+  folder: '<path d="M2.6 3.4h5.6l2.3 2.3h8.9v9.9H2.6z" fill="#5A6472"/>',
+  term:   '<rect x="2.6" y="2.6" width="12.8" height="12.8" rx="2.6" fill="#5A6472"/><path d="M5.6 6l2.6 3l-2.6 3" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12h3" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>',
+  code:   '<rect x="2.6" y="2.6" width="12.8" height="12.8" rx="2.6" fill="#5A6472"/><path d="M5.4 5.6l4.2 3.4l-4.2 3.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  calc:   '<rect x="2.6" y="2.6" width="12.8" height="12.8" rx="2.6" fill="#5A6472"/><rect x="5.2" y="5.2" width="7.6" height="3" rx="1" fill="#fff"/><circle cx="6.4" cy="11" r="1" fill="#fff"/><circle cx="9" cy="11" r="1" fill="#fff"/><circle cx="11.6" cy="11" r="1" fill="#fff"/>',
+  crop:   '<rect x="3.4" y="3.4" width="11.2" height="8.6" rx="1.6" fill="none" stroke="#5A6472" stroke-width="1.4"/><path d="M6 12.6l6-7.4" stroke="#5A6472" stroke-width="1.4" stroke-linecap="round"/>',
+  note:   '<rect x="3" y="2.6" width="12" height="12.8" rx="2.4" fill="#5A6472"/><path d="M5.8 6.4h6.4M5.8 9h6.4M5.8 11.6h4.4" stroke="#fff" stroke-width="1.2"/>',
+  bars:   '<rect x="4.6" y="4" width="8.8" height="2.4" rx="1.2" fill="#5A6472"/><rect x="2.6" y="7.8" width="12.8" height="2.4" rx="1.2" fill="#5A6472"/><rect x="4.6" y="11.6" width="8.8" height="2.4" rx="1.2" fill="#5A6472"/>',
+  slider: '<path d="M2.6 9h12.8" stroke="#5A6472" stroke-width="1.4"/><circle cx="11.6" cy="9" r="2.8" fill="#5A6472"/>',
+  music:  '<circle cx="6.6" cy="12" r="3.4" fill="#5A6472"/><path d="M10 12V3.4l5 1.8" fill="none" stroke="#5A6472" stroke-width="1.5" stroke-linecap="round"/>',
+  down:   '<path d="M9 2.6V11" stroke="#5A6472" stroke-width="1.6" stroke-linecap="round"/><path d="M5 8.4l4 4l4-4" fill="none" stroke="#5A6472" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.4 14.4h11.2" stroke="#5A6472" stroke-width="1.6" stroke-linecap="round"/>',
+  grid:   '<rect x="3" y="3" width="5" height="5" rx="1.2" fill="#5A6472"/><rect x="10" y="3" width="5" height="5" rx="1.2" fill="#5A6472"/><rect x="3" y="10" width="5" height="5" rx="1.2" fill="#5A6472"/><rect x="10" y="10" width="5" height="5" rx="1.2" fill="#5A6472"/>',
+  tag:    '<path d="M3.4 3.4h6.4l5.8 5.8l-6.4 6.4L3.4 9.8z" fill="#5A6472"/><path d="M9.8 3.4l5.8 5.8" stroke="#fff" stroke-width="1.1"/>',
+  pen:    '<circle cx="7.4" cy="9" r="5.2" fill="none" stroke="#5A6472" stroke-width="1.4"/><path d="M11 5.4L15 1.4" stroke="#5A6472" stroke-width="1.4" stroke-linecap="round"/>',
+  tool:   '<rect x="2.6" y="8" width="12.8" height="7" rx="1.8" fill="#5A6472"/><path d="M6.4 8V5.4a2.6 2.6 0 0 1 5.2 0V8" fill="none" stroke="#5A6472" stroke-width="1.4"/>'
+};
+
+const PAGES = {
+  "常用": [
+    ["微信","chat"],["浏览器","globe"],["文件管理","folder"],["终端","term"],
+    ["VS Code","code"],["计算器","calc"],["截图","crop"],["记事本","note"],
+    ["任务管理","bars"],["控制面板","slider"],["音乐","music"],["下载","down"],
+    ["项目","grid"],["便签","tag"],["画图","pen"],["工具箱","tool"]
+  ],
+  "系统工具": [
+    ["服务","bars"],["设备管理","tool"],["磁盘清理","folder"],["事件查看器","note"],
+    ["注册表","code"],["组策略","slider"],["网络诊断","globe"],["电源选项","calc"]
+  ],
+  "开发": [
+    ["VS Code","code"],["终端","term"],["Git Bash","term"],["Docker","tool"],
+    ["Postman","globe"],["Navicat","grid"],["项目目录","folder"],["构建脚本","code"]
+  ]
+};
+
+const selected = new Set();
+let currentPage = "常用";
+
+function glyph(name){
+  return '<svg width="26" height="26" viewBox="0 0 18 18" aria-hidden="true">' + ICON[name] + '</svg>';
+}
+
+function render(){
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const items = PAGES[currentPage];
+  items.forEach(function(it, i){
+    const name = it[0], g = it[1];
+    const key = currentPage + "/" + name;
+    const cell = document.createElement("div");
+    cell.className = "cell";
+
+    const tile = document.createElement("button");
+    tile.className = "tile";
+    tile.type = "button";
+    if (selected.has(key)) tile.classList.add("on");
+    if (i === 0 && selected.size === 0) tile.classList.add("focus");
+
+    let html = "";
+    if (i < 9) html += '<span class="idx">' + (i + 1) + '</span>';
+    html += '<span class="ic">' + glyph(g) + '</span>';
+    html += '<span class="nm" title="' + name + '">' + name + '</span>';
+    tile.innerHTML = html;
+
+    tile.addEventListener("click", function(){
+      if (selected.has(key)) selected.delete(key); else selected.add(key);
+      render();
+    });
+
+    cell.appendChild(tile);
+    grid.appendChild(cell);
+  });
+
+  const addCell = document.createElement("div");
+  addCell.className = "cell";
+  const add = document.createElement("button");
+  add.className = "tile add";
+  add.type = "button";
+  add.innerHTML = '<span class="plus">+</span><span class="nm">添加</span>';
+  addCell.appendChild(add);
+  grid.appendChild(addCell);
+
+  while (grid.children.length % 6 !== 0){
+    const filler = document.createElement("div");
+    filler.className = "cell";
+    grid.appendChild(filler);
+  }
+
+  const chip = document.getElementById("selchip");
+  if (selected.size > 0){
+    chip.hidden = false;
+    chip.textContent = "已选 " + selected.size + " 项";
+  } else {
+    chip.hidden = true;
+  }
+
+  document.querySelectorAll("#tabs .tab").forEach(function(t){
+    t.setAttribute("aria-selected", t.dataset.page === currentPage ? "true" : "false");
+  });
+}
+
+function buildTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  Object.keys(PAGES).forEach(function(p){
+    const b = document.createElement("button");
+    b.className = "tab";
+    b.type = "button";
+    b.textContent = p;
+    b.dataset.page = p;
+    b.setAttribute("role", "tab");
+    b.addEventListener("click", function(){ currentPage = p; render(); });
+    tabs.appendChild(b);
+  });
+}
+
+buildTabs();
+render();
+
+document.getElementById("q").addEventListener("input", function(e){
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) return;
+  const all = [];
+  Object.keys(PAGES).forEach(function(p){
+    PAGES[p].forEach(function(it){ all.push([it[0], it[1], p]); });
+  });
+  const hits = all.filter(function(x){ return x[0].toLowerCase().indexOf(q) >= 0; });
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  if (hits.length === 0) return;
+  hits.slice(0, 17).forEach(function(x, i){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const tile = document.createElement("button");
+    tile.className = "tile";
+    tile.type = "button";
+    let html = "";
+    if (i < 9) html += '<span class="idx">' + (i + 1) + '</span>';
+    html += '<span class="ic">' + glyph(x[1]) + '</span>';
+    html += '<span class="nm" title="' + x[0] + '">' + x[0] + '</span>';
+    tile.innerHTML = html;
+    cell.appendChild(tile);
+    grid.appendChild(cell);
+  });
+  while (grid.children.length % 6 !== 0){
+    const filler = document.createElement("div");
+    filler.className = "cell";
+    grid.appendChild(filler);
+  }
+});
+</script>
+</body>
+</html>

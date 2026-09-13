@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    拖拽排序下标逻辑的回归用例。
+
+    为什么是一个手写的控制台断言器，而不是 xunit / NUnit：
+    这个项目从第一天起就是零第三方依赖，为了 30 条断言引入一整套测试框架
+    和它的依赖树不划算。失败时进程退出码为 1，CI 和本地都能直接判断。
+
+    为什么用 Compile Include 引源文件而不是 ProjectReference：
+    QuickerLite.csproj 是 WinExe + WPF，控制台工程引用它会连带把 WPF 的
+    启动对象和 XAML 编译一起拖进来。TileReorder 是纯函数、不碰 UI，
+    直接编这一个文件最干净，也顺便强制它保持「不依赖 WPF 逻辑」这个性质。
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- Rect / Point 来自 WindowsBase，所以要 -windows + UseWPF -->
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- 必须关掉，否则 SDK 会把 Program.cs 也 glob 一遍，报重复入口点 -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>TileReorderTests</AssemblyName>
+    <RootNamespace>QuickerLite.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../src/QuickerLite/Core/TileReorder.cs" />
+    <Compile Include="../../src/QuickerLite/Core/KeyCombo.cs" />
+  </ItemGroup>
+
+</Project>

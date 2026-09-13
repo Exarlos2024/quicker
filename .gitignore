@@ -1,0 +1,110 @@
+# ============================================================
+#  .NET / WPF 构建产物
+# ============================================================
+
+# 编译输出。用例工程也有，所以前面不加路径限制
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Ll]og/
+[Ll]ogs/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Oo]ut/
+
+# 单文件发布产物。这个 exe 是自包含的，约 70MB —— 别进仓库
+dist/
+
+# MSBuild 中间文件
+*.tlog
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.vspscc
+*.vssscc
+.builds
+*.svclog
+*.scc
+
+# NuGet（packages 目录已废弃但老项目可能还有）
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+
+# ============================================================
+#  测试
+# ============================================================
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# ============================================================
+#  编辑器 / IDE
+# ============================================================
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.userprefs
+*.sln.docstates
+*.csproj.user
+*.sln.iml
+*.swp
+*~
+
+# ============================================================
+#  操作系统
+# ============================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# ============================================================
+#  本项目专有
+# ============================================================
+
+# WorkBuddy 的工作记忆与会话状态。这是本机 AI 辅助工具的数据，
+# 不是项目源码 —— 换台机器、换个协作者都会不一样，提交上去只会添乱。
+.workbuddy-ai/
+
+# 应用自己的运行时数据（配置、图标缓存、日志）都在
+# %AppData%\QuickerLite\ 下，不在项目目录里。
+# 万一哪天有人把它们挪进来了，也别提交：
+config.json
+icons/
+*.log
