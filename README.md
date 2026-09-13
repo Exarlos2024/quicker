@@ -472,3 +472,9 @@ error : Value cannot be null. (Parameter 'path1')
 ```
 启动完成：热键=Ctrl+Alt+Q，注册=True，动作页=2 全局 + 1 场景，条目=22，列数=6，单击Ctrl=True(键盘钩子=True)，中键=True(鼠标钩子=True)
 ```
+
+---
+
+## 许可
+
+[MIT](LICENSE)。第三方依赖为零，所以没有需要一并遵守的附加条款。
